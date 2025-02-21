@@ -12,12 +12,12 @@ class data():
         self.d = mat['days']
         self.p = mat['pm']
         self.n = mat['nmss']
-        [N,M] = np.shape(p)
+        [N,M] = np.shape(self.p)
         self.N = N
         self.M = M
-        self.Data = pd.DataFrame({'days': d[:,0]})
+        self.Data = pd.DataFrame({'days': self.d[:,0]})
         for i in range(M):
-            Datai = pd.DataFrame({n[i,0][0] : p[:,i]})
+            Datai = pd.DataFrame({self.n[i,0][0] : self.p[:,i]})
             self.Data = pd.concat([self.Data,Datai],axis=1)
 
         self.DataETFs = self.Data[self.tickers]
@@ -26,7 +26,7 @@ class data():
         self.DataETFsReturns.insert(0, 'days', self.d[1:])
         self.DataETFsReturns['days'] = pd.to_datetime(self.DataETFsReturns['days'], format='%Y%m%d')
     
-    def ICA(self, max_iter, tol):
+    def ICA(self, max_iter = 500, tol = 0.1):
         X = self.DataETFsReturns.iloc[:,1:].values
         transformer = FastICA(n_components=10,
             random_state=0,
@@ -39,13 +39,14 @@ class data():
         lookbackperiod = 63
         Failed = list()
         for i in range(lookbackperiod,self.N):
-                X_transformed[self.DataETFsReturns['days'][i]] = transformer.fit_transform(X[i-lookbackperiod:i])
-                W[self.DataETFsReturns['days'][i]] = transformer.components_
-                A[self.DataETFsReturns['days'][i]] = transformer.mixing_
-                if transformer.n_iter_ >= max_iter:
-                        print(Failed.append(self.d[i]))
+            X_transformed[self.DataETFsReturns['days'][i]] = transformer.fit_transform(X[i-lookbackperiod:i])
+            W[self.DataETFsReturns['days'][i]] = transformer.components_
+            A[self.DataETFsReturns['days'][i]] = transformer.mixing_
+            if transformer.n_iter_ >= max_iter:
+                Failed.append(self.d[i])
+        return [W,A, Failed]
 
-    def Returns_Visualization(self, ticker: str) -> None:
+    def Returns_Visualization(self, ticker: str):
         if ticker not in self.tickers:
              print('Error: ticker should be one of:', self.tickers)
              return
@@ -53,6 +54,7 @@ class data():
         y = self.DataETFsReturns[ticker]
 
         # Create the plot
+        plt.figure(figsize=(10, 5))
         plt.plot(x, y, label='spy', color='blue', linestyle='-', linewidth=0.1, marker='o', markersize=1)
 
         # Add labels and title
@@ -69,12 +71,13 @@ class data():
         # Show the plot
         plt.show()
 
-    def BasicInvesting_CumReturn(self, ticker: str) -> None:
+    def BasicInvesting_CumReturn(self, ticker: str):
         x = self.DataETFsReturns['days']
         y = self.DataETFsReturns[ticker].cumsum()
         for i in range(1,self.N):
             y[i:] += self.DataETFsReturns[ticker][i:].cumsum()
         # Create the plot
+        plt.figure(figsize=(10, 5))
         plt.plot(x, y, label='spy', color='blue', linestyle='-', linewidth=0.1, marker='o', markersize=1)
 
         # Add labels and title
