@@ -1,0 +1,21 @@
+name: dsp_equity_strategy
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.10
+  - pandas
+  - numpy
+  - matplotlib
+  - seaborn
+  - yfinance
+  - scikit-le
+  - jupyterlab
+  - ipykernel
+  - cvxpy
+  - pip
+  - pip:
+      - statsmodels
+      - dsp-cvxpy
+
