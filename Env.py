@@ -21,7 +21,7 @@ class data():
             self.Data = pd.concat([self.Data,Datai],axis=1)
 
         self.DataETFs = self.Data[self.tickers]
-        self.DataETFsReturns = self.DataETFs.diff()
+        self.DataETFsReturns = self.DataETFs.pct_change()
         self.DataETFsReturns = self.DataETFsReturns.drop(index = 0)
         self.DataETFsReturns.insert(0, 'days', self.d[1:])
         self.DataETFsReturns['days'] = pd.to_datetime(self.DataETFsReturns['days'], format='%Y%m%d')
