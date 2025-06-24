@@ -34,9 +34,7 @@ class BG:
             batch_size=256,
             ticker='spy',
             window=100,
-            fit_day_indices=None,
-            save_path_empirical_quantiles='estimates/empirical_quantiles.pt',
-            load_empirical_quantiles_if_available=False):
+            fit_day_indices=None):
         """
         Initialize the BG class for bilateral gamma PDF estimation using FFT.
         Parameters
@@ -98,8 +96,7 @@ class BG:
         # Precompute the target quantile levels
         # --------------------------------------------------------------
 
-        self.Pi_target = np.linspace(0.01, 0.99, window)
-        self.empirical_quantiles(save_path=save_path_empirical_quantiles, load_if_available=load_empirical_quantiles_if_available)
+        self.empirical_quantiles()
         self.Pi_target_torch = torch.tensor(self.Pi_target, dtype=torch.float32, device=self.device)
 
         # --------------------------------------------------------------
@@ -149,7 +146,7 @@ class BG:
         pdf_vals = torch.real(torch.fft.fft(fft_input, dim=-1)) / np.pi
         return pdf_vals.squeeze()  # remove batch dim if batch_size = 1
     
-    def empirical_quantiles(self, save_path='estimates/empirical_quantiles.pt', load_if_available=True):
+    def empirical_quantiles(self):
         """
         Compute empirical quantiles for a batch of return series.
 
@@ -165,42 +162,19 @@ class BG:
         s_batch : (n_days, 99) array of empirical quantiles
         """
 
-           # Try loading existing result
-        if load_if_available and save_path is not None and os.path.exists(save_path):
-            print(f"[INFO] Loading s_batch from: {save_path}")
-            self.s_batch = torch.load(save_path, map_location=self.device)
-            assert isinstance(self.s_batch, torch.Tensor), "Loaded object is not a torch.Tensor"
-            assert self.s_batch.device == self.device, "Loaded tensor is not on the correct device"
-            return self.s_batch
-
-        batch_returns = self.returns_matrix  # shape (T-window, window)
-        T = self.T  # Number of days after the window
+        batch_returns = self.returns_matrix  # shape (T, window)
         W = self.window
-        s_sorted = np.sort(batch_returns, axis=1)
-        pi_emp = np.arange(1, W + 1) / W
-        Pi_target = self.Pi_target
+        s_batch = np.sort(batch_returns, axis=1)
+        pi = np.arange(1, W + 1) / W
+        pi_broadcast = np.tile(pi, (s_batch.shape[0], 1))  # shape (T, K)
         # Flip to tail probability when s_batch >= 0
         Pi_target = np.where(
-            s_sorted[0] < 0,
-            Pi_target,
-            1.0 - Pi_target
+            s_batch < 0,
+            pi_broadcast,
+            1.0 - pi_broadcast
         )
         self.Pi_target = Pi_target
-
-        # Interpolate quantiles for each day
-        s_batch = np.array([
-            np.interp(Pi_target, pi_emp, s_sorted[i], left=s_sorted[i, 0], right=s_sorted[i, -1])
-            for i in range(T)
-        ])
-
         self.s_batch = torch.tensor(s_batch, dtype=torch.float32).to(self.device) # Move to GPU
-
-        # Optional saving
-        if save_path is not None:
-            torch.save(self.s_batch, save_path)
-            print(f"[INFO] Saved s_batch to: {save_path}")
-
-        return
 
     def theoretical_quantiles(self, theta_batch, s_batch=None):
         """
@@ -285,7 +259,7 @@ class BG:
         Q_model = torch.cat(Q_model_list, dim=0)  # shape (T, K)
         return Q_model
 
-    def quantile_loss_AD(self, theta_batch, s_batch, return_per_day=False):
+    def quantile_loss_AD(self, theta_batch, s_batch, pi_batch, return_per_day=False):
         """
         Anderson-Darling weighted loss between theoretical and empirical quantiles.
         Fully differentiable w.r.t. theta_batch.
@@ -300,12 +274,12 @@ class BG:
         theta_transformed = torch.cat([bp, cp, bn, cn], dim=1)
 
         Q_model = self.theoretical_quantiles(theta_transformed, s_batch)  # shape (B, K)
-        Q_emp = self.Pi_target_torch.view(1, -1)  # shape (1, K)
+        Q_emp = pi_batch  # shape (B, K)
+
         
         # Anderson-Darling weights (tail-emphasizing)
         eps = 1e-6
-        w = 1.0 / (Q_emp * (1 - Q_emp) + eps)  # shape (K,)
-        w = w.view(1, -1)  # Make w broadcast-compatible with (B, K)
+        w = 1.0 / (Q_emp * (1 - Q_emp) + eps)  # shape (B,K)
 
         weighted_sq_diff = ((Q_model - Q_emp) ** 2) * w  # shape (B, K)
         per_day_loss = weighted_sq_diff.mean(dim=1) # shape (B,)
@@ -371,12 +345,13 @@ class BG:
                 theta_batch = theta_batch.detach().clone().requires_grad_()
 
             s_batch = self.s_batch[t0:t1]  # narrow s_batch to batch window
+            Pi_batch = self.Pi_target_torch[t0:t1]  # narrow Pi_target to batch window  
 
             # Use Adam optimizer instead of LBFGS for per-day independence
             optimizer = torch.optim.Adam([theta_batch], lr=1e-3, amsgrad=True)  # Use Adam optimizer
             for s in range(max_iter):
                 optimizer.zero_grad()
-                loss = self.quantile_loss_AD(theta_batch, s_batch)
+                loss = self.quantile_loss_AD(theta_batch, s_batch, Pi_batch)
                 loss.backward()
                 if backtracking:
                     grad_snapshot = theta_batch.grad.detach().clone()
@@ -408,7 +383,7 @@ class BG:
             self.all_params[t0:t1] = theta_final.detach().cpu().numpy()
             # Recompute per-day loss using final theta
             with torch.no_grad():
-                per_day_loss = self.quantile_loss_AD(theta_final, s_batch, return_per_day=True)
+                per_day_loss = self.quantile_loss_AD(theta_final, s_batch, Pi_batch, return_per_day=True)
             self.batch_losses[t0:t1] = per_day_loss.cpu().numpy()
 
             # Save checkpoint
