@@ -34,7 +34,8 @@ class BG:
             batch_size=256,
             ticker='spy',
             window=100,
-            fit_day_indices=None):
+            fit_day_indices=None,
+            save_path=None):
         """
         Initialize the BG class for bilateral gamma PDF estimation using FFT.
         Parameters
@@ -91,6 +92,7 @@ class BG:
 
         self.all_params = np.full((self.T, 4), np.nan) 
         self.batch_losses = np.full((self.T,), np.nan)
+        self.save_path = save_path
 
         # --------------------------------------------------------------
         # Precompute the target quantile levels
@@ -320,10 +322,10 @@ class BG:
         if initial_theta is None:
             # Default: repeat a reasonable starting guess
             initial_theta = np.tile(np.array([0.0075, 1.55, 0.0181, 0.6308]), (T, 1))
-        if isinstance(initial_theta, np.ndarray):
-            if initial_theta.shape != (1, 4):
-                # Assume: initial theta is a numpy array of shape (1,4)
-                initial_theta = np.tile(initial_theta, (min(batch_size,T), 1))
+        # if isinstance(initial_theta, np.ndarray):
+        #     if initial_theta.shape != (1, 4):
+        #         # Assume: initial theta is a numpy array of shape (1,4)
+        #         initial_theta = np.tile(initial_theta, (min(batch_size,T), 1))
         
         apply_warm_start = (initial_theta is None) or (len(initial_theta) < T)
 
@@ -391,8 +393,10 @@ class BG:
                 theta_batch.detach().cpu(),
                 os.path.join(checkpoint_dir, f"theta_{t0:04d}_{t1:04d}.pt")
             )
+        if self.save_path:
+            np.save(self.save_path, self.all_params)
 
-        return self.all_params  # Return after each batch for debugging
+        return  # Return after each batch for debugging
 
     def backtracking_step(self, theta, grad, loss_fn, s_batch, alpha_init=1.0, beta=0.5, c=1e-4):
         with torch.no_grad():
