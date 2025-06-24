@@ -27,7 +27,16 @@ class BG:
     - fit_multiple(X, window, n_workers): fits each column of X in parallel.
     """
 
-    def __init__(self, N=4096, B=100000, device=None, batch_size=256, ticker='spy', window=100, fit_day_indices=None):
+    def __init__(self,
+            N=2**14,
+            B=300000,
+            device=None,
+            batch_size=256,
+            ticker='spy',
+            window=100,
+            fit_day_indices=None,
+            save_path_empirical_quantiles='estimates/empirical_quantiles.pt',
+            load_empirical_quantiles_if_available=False):
         """
         Initialize the BG class for bilateral gamma PDF estimation using FFT.
         Parameters
@@ -89,8 +98,9 @@ class BG:
         # Precompute the target quantile levels
         # --------------------------------------------------------------
 
-        self.Pi_target = np.linspace(0.01, 0.99, 99)
-        self.Pi_target_torch = torch.tensor(self.Pi_target, dtype=torch.float32, device=self.device) 
+        self.Pi_target = np.linspace(0.01, 0.99, window)
+        self.empirical_quantiles(save_path=save_path_empirical_quantiles, load_if_available=load_empirical_quantiles_if_available)
+        self.Pi_target_torch = torch.tensor(self.Pi_target, dtype=torch.float32, device=self.device)
 
         # --------------------------------------------------------------
         # FFT routine parameters
@@ -152,7 +162,6 @@ class BG:
 
         Returns
         -------
-        Pi_target : (99,) array of quantile levels
         s_batch : (n_days, 99) array of empirical quantiles
         """
 
@@ -170,12 +179,20 @@ class BG:
         s_sorted = np.sort(batch_returns, axis=1)
         pi_emp = np.arange(1, W + 1) / W
         Pi_target = self.Pi_target
+        # Flip to tail probability when s_batch >= 0
+        Pi_target = np.where(
+            s_sorted[0] < 0,
+            Pi_target,
+            1.0 - Pi_target
+        )
+        self.Pi_target = Pi_target
 
         # Interpolate quantiles for each day
         s_batch = np.array([
             np.interp(Pi_target, pi_emp, s_sorted[i], left=s_sorted[i, 0], right=s_sorted[i, -1])
             for i in range(T)
         ])
+
         self.s_batch = torch.tensor(s_batch, dtype=torch.float32).to(self.device) # Move to GPU
 
         # Optional saving
@@ -183,7 +200,7 @@ class BG:
             torch.save(self.s_batch, save_path)
             print(f"[INFO] Saved s_batch to: {save_path}")
 
-        return self.s_batch
+        return
 
     def theoretical_quantiles(self, theta_batch, s_batch=None):
         """
@@ -227,6 +244,13 @@ class BG:
 
         weight = (s_clamped - x_lower) / (x_upper - x_lower + 1e-8)
         Pi_hat = cdf_lower + weight * (cdf_upper - cdf_lower) # Linear interpolation
+
+        # Flip to tail probability when s_batch >= 0    
+        Pi_hat = torch.where(
+            s_batch < 0,
+            Pi_hat,
+            1.0 - Pi_hat
+        )
 
         return Pi_hat  # (B, K), fully differentiable w.r.t. theta
 
@@ -275,13 +299,14 @@ class BG:
 
         theta_transformed = torch.cat([bp, cp, bn, cn], dim=1)
 
-
         Q_model = self.theoretical_quantiles(theta_transformed, s_batch)  # shape (B, K)
         Q_emp = self.Pi_target_torch.view(1, -1)  # shape (1, K)
         
         # Anderson-Darling weights (tail-emphasizing)
         eps = 1e-6
         w = 1.0 / (Q_emp * (1 - Q_emp) + eps)  # shape (K,)
+        w = w.view(1, -1)  # Make w broadcast-compatible with (B, K)
+
         weighted_sq_diff = ((Q_model - Q_emp) ** 2) * w  # shape (B, K)
         per_day_loss = weighted_sq_diff.mean(dim=1) # shape (B,)
 
@@ -291,7 +316,7 @@ class BG:
             torch.full_like(per_day_loss, 1e5),
             per_day_loss
         )
-
+        
         return per_day_loss if return_per_day else per_day_loss.mean()
 
 
@@ -302,14 +327,14 @@ class BG:
     # Assume: theta_batch (T_small, 4) on CUDA, requires_grad=True
     # Assume: s_batch (T_small, K) already set
 
-    def fit_theta_in_batches(self, initial_theta=None, max_iter=200, verbose=True):
+    def fit_theta_in_batches(self, initial_theta=None, max_iter=200, verbose=True, backtracking=False):
         """
-        Fit theta_batch over all time steps using LBFGS with mini-batches.
-
+        Fit theta_batch over all time steps using Adams with mini-batches and (optionally) backtracking line search.
+        # LBFGS introduces across days dependence, so it is better to use Adam for per-day independence
         Parameters:
         - initial_theta: optional numpy array of shape (T, 4), default = constant guess
         - batch_size: number of days per optimization batch
-        - max_iter: LBFGS maximum iterations per batch
+        - max_iter: Adam maximum iterations per batch
         - verbose: if True, print loss at each batch
 
         Stores:
@@ -347,42 +372,37 @@ class BG:
 
             s_batch = self.s_batch[t0:t1]  # narrow s_batch to batch window
 
-            # optimizer = torch.optim.LBFGS([theta_batch], max_iter=max_iter, tolerance_grad=1e-7) # LBFGS introduces across days dependence, so better to use Adam for per-day independence
-            # def closure():
-            #     optimizer.zero_grad()
-            #     loss = self.quantile_loss_AD(theta_batch, s_batch)
-            #     loss.backward()
-            #     return loss
-            # loss = optimizer.step(closure)
-
             # Use Adam optimizer instead of LBFGS for per-day independence
             optimizer = torch.optim.Adam([theta_batch], lr=1e-3, amsgrad=True)  # Use Adam optimizer
-            for _ in range(max_iter):
+            for s in range(max_iter):
                 optimizer.zero_grad()
                 loss = self.quantile_loss_AD(theta_batch, s_batch)
                 loss.backward()
-                optimizer.step()
-            
+                if backtracking:
+                    grad_snapshot = theta_batch.grad.detach().clone()
+                    optimizer.step()
+                    # Optional backtracking line search
+                    with torch.no_grad():
+                        theta_bt, alpha_bt = self.backtracking_step(
+                            theta=theta_batch, grad=grad_snapshot, loss_fn=self.quantile_loss_AD, s_batch=s_batch
+                        )
+                        theta_batch[:] = theta_bt  # update in place
+                else: 
+                    optimizer.step() 
+                s += 1
+
             if verbose:
                 opt_str = "Adam"
-                print(f"[{t0:4d}:{t1:4d}] {opt_str} Loss = {loss.item():.6f}")
+                print(f"[{t0:4d}:{t1:4d}] {opt_str} Loss = {loss.item():.6f} Total steps = {s}")
 
-            # # bp, bn were sigmoid-ed ⇒ inverse sigmoid = logit
-            # theta_final[:, 0] = torch.abs(theta_final[:, 0].clamp(1e-6))  # bp
-            # theta_final[:, 2] = torch.abs(theta_final[:, 2].clamp(1e-6))  # bn
-            # # cp, cn were exponentiated ⇒ inverse = log
-            # theta_final[:, 1] = torch.abs(theta_final[:, 1].clamp(min=1e-8))          # cp
-            # theta_final[:, 3] = torch.abs(theta_final[:, 3].clamp(min=1e-8))          # cn
-
+            # Finalize theta_batch to ensure non-negativity
             eps = 1e-6  # small value to prevent sqrt(0)
-
             theta_final = torch.stack([
                 torch.sqrt(theta_batch[:, 0]**2 + eps),
                 torch.sqrt(theta_batch[:, 1]**2 + eps),
                 torch.sqrt(theta_batch[:, 2]**2 + eps),
                 torch.sqrt(theta_batch[:, 3]**2 + eps)
             ], dim=1).detach()
-
 
             # Save to all_params
             self.all_params[t0:t1] = theta_final.detach().cpu().numpy()
@@ -399,6 +419,21 @@ class BG:
 
         return self.all_params  # Return after each batch for debugging
 
+    def backtracking_step(self, theta, grad, loss_fn, s_batch, alpha_init=1.0, beta=0.5, c=1e-4):
+        with torch.no_grad():
+            alpha = alpha_init
+            loss_0 = loss_fn(theta, s_batch)
+            grad_norm_sq = (grad ** 2).sum()
+
+            while alpha > 1e-5:
+                theta_new = theta - alpha * grad
+                loss_new = loss_fn(theta_new, s_batch)
+                if loss_new <= loss_0 - c * alpha * grad_norm_sq:
+                    return theta_new, alpha
+                alpha *= beta
+
+        return theta, 0.0  # fallback
+
 # ------------------------------------------
 # Example usage
 # ------------------------------------------
@@ -414,13 +449,7 @@ if __name__ == "__main__":
     # 2) Build BG instance with appropriate x-grid
     bg = BG(N=4096, Xmax=0.1, device='cuda')  # Ensure it uses GPU
 
-    # 3) Extract SPY returns only (1D)
-    spy_returns = X[:, 0:1]  # shape (4430, 1)
-
-    # 4) Compute empirical quantiles on GPU
-    bg.s_batch = bg.empirical_quantiles(torch.tensor(spy_returns, dtype=torch.float32).to('cuda'))
-
-    # 5) Fit theta over all time with batching
+    # 3) Fit theta over all time with batching
     print("Fitting theta in batches...")
     theta_spy = bg.fit_theta_in_batches(batch_size=200, max_iter=20, verbose=True)
 
