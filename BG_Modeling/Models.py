@@ -8,7 +8,7 @@ print(torch.cuda.is_available())
 print(torch.cuda.get_device_name(0))  # Optional: Shows GPU name
 
 import os
-
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 checkpoint_dir = "theta_checkpoints"
 os.makedirs(checkpoint_dir, exist_ok=True)
 
@@ -57,7 +57,8 @@ class BG:
         # Load data and prepare returns
         # ---------------------------------------------------------------
 
-        mat = loadmat('tsd180.mat')
+        data_path = os.path.join(PROJECT_ROOT, "Data", "tsd180.mat")
+        mat = loadmat(data_path)
         d = mat['days']
         p = mat['pm']
         n = mat['nmss']
@@ -467,8 +468,8 @@ class BG:
             days = [days[i] for i in random.sample(range(len(days)), n)]
         days_0 = [day - days[0] for day in days]
 
-        theta_batch = torch.tensor(theta_spy[days_0], dtype=torch.float32).to(bg.device)
-        Q_model = bg.theoretical_quantiles(theta_batch, s_batch[days_0])  # shape (n, K)
+        theta_batch = torch.tensor(theta_spy[days_0], dtype=torch.float32).to(self.device)
+        Q_model = self.theoretical_quantiles(theta_batch, s_batch[days_0])  # shape (n, K)
 
         K = len(Pi_target)
 
@@ -587,6 +588,17 @@ class BG:
 
         plt.tight_layout()
         plt.show()
+
+    def plot_diagnostics(self, theta_batch):
+        self.plot_loss_per_day()
+        print(f"Average loss per day: {self.batch_losses.mean():.4f}")
+        print(f"Max loss per day: {self.batch_losses.max():.4f}")
+        print(f"Day with max loss: {self.days[self.fit_day_indices][self.batch_losses.argmax()]}")
+
+        # Plot empirical vs theoretical quantiles for SPY on day with max loss
+        idx_worst = self.batch_losses.argmax()+self.window
+        idx = [idx_worst-100,idx_worst,idx_worst+100]
+        self.plot_empirical_vs_theoretical(theta_batch, n=3, days=idx)
 
 
 # ------------------------------------------
