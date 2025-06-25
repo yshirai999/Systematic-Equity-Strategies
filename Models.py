@@ -361,7 +361,7 @@ class BG:
                     # Optional backtracking line search
                     with torch.no_grad():
                         theta_bt, alpha_bt = self.backtracking_step(
-                            theta=theta_batch, grad=grad_snapshot, loss_fn=self.quantile_loss_AD, s_batch=s_batch
+                            theta=theta_batch, grad=grad_snapshot, loss_fn=self.quantile_loss_AD, s_batch=s_batch, Pi_batch=Pi_batch
                         )
                         theta_batch[:] = theta_bt  # update in place
                 else: 
@@ -398,15 +398,15 @@ class BG:
 
         return  # Return after each batch for debugging
 
-    def backtracking_step(self, theta, grad, loss_fn, s_batch, alpha_init=1.0, beta=0.5, c=1e-4):
+    def backtracking_step(self, theta, grad, loss_fn, s_batch, Pi_batch, alpha_init=1.0, beta=0.5, c=1e-4):
         with torch.no_grad():
             alpha = alpha_init
-            loss_0 = loss_fn(theta, s_batch)
+            loss_0 = loss_fn(theta, s_batch, Pi_batch)
             grad_norm_sq = (grad ** 2).sum()
 
             while alpha > 1e-5:
                 theta_new = theta - alpha * grad
-                loss_new = loss_fn(theta_new, s_batch)
+                loss_new = loss_fn(theta_new, s_batch, Pi_batch)
                 if loss_new <= loss_0 - c * alpha * grad_norm_sq:
                     return theta_new, alpha
                 alpha *= beta
