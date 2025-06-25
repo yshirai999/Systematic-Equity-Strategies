@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 from scipy.io import loadmat
-
+import matplotlib.pyplot as plt
+import random
 import torch
 print(torch.cuda.is_available())
 print(torch.cuda.get_device_name(0))  # Optional: Shows GPU name
@@ -412,6 +413,181 @@ class BG:
                 alpha *= beta
 
         return theta, 0.0  # fallback
+    
+    # -----------------------------------------------------------------------------
+    # Visualization and utility methods
+    # -----------------------------------------------------------------------------
+    def plot_bg_pdfs(self, theta_batch, pdfs=None):
+        """
+        Plot a batch of BG PDFs.
+        
+        Parameters:
+        - bg_model: the BG model object (already instantiated)
+        - theta_batch: torch.Tensor of shape (B, 4)
+        - pdfs: optional, precomputed tensor of shape (B, N)
+        """
+        B = theta_batch.shape[0]
+
+        if pdfs is None:
+            pdfs = self.pdf(theta_batch)
+
+        x = self.x.cpu().numpy() if isinstance(self.x, torch.Tensor) else self.x
+
+        for i in range(B):
+            theta = theta_batch[i].cpu().numpy()
+            label = f"bp={theta[0]:.2e}, cp={theta[1]:.2e}, bn={theta[2]:.2e}, cn={theta[3]:.2e}"
+
+            plt.figure(figsize=(8, 4))
+            plt.plot(x, pdfs[i].cpu().numpy(), label=label)
+            plt.title(f'BG PDF Estimate - Sample {i}')
+            plt.xlabel('Return')
+            plt.ylabel('Density')
+            plt.grid(True)
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
+    def plot_empirical_vs_theoretical(self, theta_spy, n=3, seed=42, days=None):
+        """
+        Plots empirical vs theoretical CDFs for `n` randomly selected days.
+        Now splits upper and lower tails into separate subplots.
+        """
+        s_batch = self.s_batch          # shape (T, K)
+        Pi_target = self.Pi_target    # shape (T,K)
+        cal_days = self.days          # List of calibration days
+
+        if days is None:
+            days = range(len(cal_days))
+        
+        n = min(n, len(days))  # Ensure n does not exceed available days
+        if n == len(days):
+            days = [days[i] for i in range(len(days))]  # Use all days if n >= # available days
+        else:
+            random.seed(seed)
+            days = [days[i] for i in random.sample(range(len(days)), n)]
+        days_0 = [day - days[0] for day in days]
+
+        theta_batch = torch.tensor(theta_spy[days_0], dtype=torch.float32).to(bg.device)
+        Q_model = bg.theoretical_quantiles(theta_batch, s_batch[days_0])  # shape (n, K)
+
+        K = len(Pi_target)
+
+        for i, day in enumerate(days):
+            s = s_batch[day - days[0]].cpu().numpy()
+            pi_emp = Pi_target[day - days[0]]
+            pi_model = Q_model[i].detach().cpu().numpy()
+
+            plt.plot(s, pi_emp, label='Empirical tails')
+            plt.plot(s, pi_model, label='Theoretical tails')
+            plt.title(f'Tails Fitting (day {cal_days[day]})')
+            plt.xlabel('s')
+            plt.grid(True)
+            plt.legend()
+
+            plt.tight_layout()
+            plt.show()
+
+    def plot_loss_per_day(self, logscale=False):
+        """
+        Plot per-day loss using BG.batch_losses and BG.days.
+
+        Parameters
+        ----------
+        bg : instance of BG class
+            Must contain attributes:
+            - batch_losses: (T,) array of losses
+            - fit_day_indices: list of indices into bg.days
+            - days: full list of datetime64 days
+        logscale : bool
+            If True, plot y-axis on log scale
+        """
+        assert hasattr(self, 'batch_losses') and hasattr(self, 'fit_day_indices') and hasattr(self, 'days')
+
+        # Map fit_day_indices to actual calendar days
+        day_labels = pd.to_datetime(self.days[self.fit_day_indices])
+        
+        # Build plot
+        plt.figure(figsize=(10, 4))
+        plt.plot(day_labels, self.batch_losses, marker='.', linestyle='-', alpha=0.8)
+        plt.xlabel("Date")
+        plt.ylabel("Loss per day")
+        if logscale:
+            plt.yscale("log")
+            plt.ylabel("Loss per day (log)")
+        plt.title("Anderson-Darling Loss Per Day")
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+    def plot_params(self, idx):
+        idx_0 = [id-idx[0] for id in idx]
+        bp, cp, bn, cn = self.all_params[idx_0].T
+        T = self.days[idx_0]
+
+        # 1. Plot each parameter over time
+        fig, axs = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
+        params = ['bp', 'cp', 'bn', 'cn']
+        for i, param in enumerate([bp, cp, bn, cn]):
+            axs[i].plot(T, param, label=params[i])
+            axs[i].set_ylabel(params[i])
+            axs[i].legend()
+            axs[i].grid(True)
+        axs[-1].set_xlabel('Time')
+        plt.suptitle('Parameter Evolution Over Time')
+        plt.tight_layout()
+        plt.show()
+
+        # 2. Plot parameter pairs: (mup, sigmap) and (mun, sigman)
+        fig, ax = plt.subplots(1, 3, figsize=(12, 5))
+        ax[0].scatter(bp*cp, np.sqrt(bp)*cp, alpha=0.6)
+        ax[0].set_xlabel('mup')
+        ax[0].set_ylabel('sigmap')
+        ax[0].set_title('mup vs sigmap')
+
+        ax[1].scatter(bp*cp, bn*cn, alpha=0.6, color='orange')
+        ax[1].set_xlabel('mup')
+        ax[1].set_ylabel('mun')
+        ax[1].set_title('mup vs mun')
+
+        ax[2].scatter(bp*cp, np.sqrt(bn)*cn, alpha=0.6, color='green')
+        ax[2].set_xlabel('mup')
+        ax[2].set_ylabel('sigman')
+        ax[2].set_title('mup vs sigman')
+
+        plt.suptitle('Parameter Pair Relationships')
+        plt.tight_layout()
+        plt.show()
+
+        # 3. Plot parameter pairs: (bp, bn) and (cp, cn)
+        fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+        ax[0].scatter(cp, cn, alpha=0.6)
+        ax[0].set_xlabel('cp')
+        ax[0].set_ylabel('bcn')
+        ax[0].set_title('cp vs cn')
+
+        ax[1].scatter(bp, bn, alpha=0.6)
+        ax[1].set_xlabel('bp')
+        ax[1].set_ylabel('bn')
+        ax[1].set_title('bp vs bn')
+
+        plt.tight_layout()
+        plt.show()
+
+        # 3. Plot parameter pairs: (bp, bn) and (cp, cn)
+        fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+        ax[0].scatter(cp, bp, alpha=0.6)
+        ax[0].set_xlabel('cp')
+        ax[0].set_ylabel('bp')
+        ax[0].set_title('cp vs bp')
+
+        ax[1].scatter(cn, bn, alpha=0.6)
+        ax[1].set_xlabel('cn')
+        ax[1].set_ylabel('bn')
+        ax[1].set_title('bn vs cn')
+
+        plt.tight_layout()
+        plt.show()
+
 
 # ------------------------------------------
 # Example usage

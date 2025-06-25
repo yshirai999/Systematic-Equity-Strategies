@@ -1,0 +1,15 @@
+ticker: 'spy'
+save_path: 'estimates/spy_params.npy'
+train: false
+window: 100
+batch_size: 256
+device: 'cuda'
+N: 16384
+B: 300000
+max_iter: 500
+backtracking: true
+backtracking_params:
+  alpha: 0.1
+  beta: 0.5
+  max_iter: 10
+initial_theta_path: estimates/spy_theta_500_NBT.mat"
