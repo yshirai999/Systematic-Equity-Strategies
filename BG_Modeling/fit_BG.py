@@ -35,7 +35,7 @@ initial_theta_path = os.path.join(SCRIPT_DIR, 'estimates', ticker, init_filename
 
 save_path = os.path.join(SCRIPT_DIR,"estimates", ticker, f"{ticker}_{save_path}_{max_iter}_BT_{backtracking}.npy")
 params_path = os.path.join(SCRIPT_DIR,"estimates", ticker, f"{ticker}_{params_path}_{max_iter}_BT_{backtracking}.npy")
-if cfg["train"]:
+if cfg["train"] or cfg["load_initial_theta"]:
     try:
         initial_theta = np.load(initial_theta_path)
         initial_theta_loaded = True

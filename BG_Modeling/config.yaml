@@ -8,7 +8,7 @@ device: 'cuda'
 N: 16384
 B: 300000
 max_iter: 500
-backtracking: False
+backtracking: True
 backtracking_params:
   alpha: 0.1
   beta: 0.5
@@ -16,3 +16,4 @@ backtracking_params:
 initial_theta_prefix: 'theta'
 initial_theta_max_iter: 500
 initial_theta_backtracking: False
+load_initial_theta: True
