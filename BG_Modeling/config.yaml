@@ -1,5 +1,6 @@
 ticker: 'spy'
-save_path: 'estimates\spy_theta_500_BT_init500.npy'
+# save_path: 'estimates\spy\spy_theta.npy'
+# params_path: 'estimates\spy\spy_theta_500_BT_init500.npy'
 train: false
 window: 100
 batch_size: 256

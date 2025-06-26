@@ -1,5 +1,7 @@
 # Robust Multivariate Investment
 
+This repo proposes an end-to-end pipeline from data retrieval and processing to portfolio construction.
+
 ```bash
 /project_root/
 │
