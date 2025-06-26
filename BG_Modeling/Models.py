@@ -1,11 +1,14 @@
 import numpy as np
 import pandas as pd
 from scipy.io import loadmat
+import matplotlib
+matplotlib.use('TkAgg')  # or try 'QtAgg' if you have it
 import matplotlib.pyplot as plt
 import random
 import torch
-print(torch.cuda.is_available())
-print(torch.cuda.get_device_name(0))  # Optional: Shows GPU name
+
+print("cuda is available: ", torch.cuda.is_available())
+print("GPU name: ", torch.cuda.get_device_name(0))  # Optional: Shows GPU name
 
 import os
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -396,6 +399,7 @@ class BG:
                 os.path.join(checkpoint_dir, f"theta_{t0:04d}_{t1:04d}.pt")
             )
         if self.save_path:
+            os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
             np.save(self.save_path, self.all_params)
 
         return  # Return after each batch for debugging

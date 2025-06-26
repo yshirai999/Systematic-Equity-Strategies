@@ -6,9 +6,14 @@ from scipy.io import loadmat
 import torch
 
 import os
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Run this script in PowerShell to update the config.yaml file:
-# (Get-Content BG_Modeling\config.yaml) -replace 'ticker:.*', 'ticker: spy' -replace 'train:.*', 'train: True' | Set-Content BG_Modeling\config.yaml
+# (Get-Content BG_Modeling\config.yaml) -replace 'ticker:.*', 'ticker: xlb' | Set-Content BG_Modeling\config.yaml
+# (Get-Content BG_Modeling\config.yaml) -replace 'train:.*', 'train: True' | Set-Content BG_Modeling\config.yaml
+# (Get-Content BG_Modeling\config.yaml) -replace 'max_iter:.*', 'max_iter: 500' | Set-Content BG_Modeling\config.yaml
+# (Get-Content BG_Modeling\config.yaml) -replace 'backtracking:.*', 'backtracking: False' | Set-Content BG_Modeling\config.yaml
+# Tickers: spy, xlb, xle, xlf, xli, xlk, xlp, xlu, xlv, xly
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(script_dir, "config.yaml")
@@ -16,13 +21,31 @@ config_path = os.path.join(script_dir, "config.yaml")
 with open(config_path, "r") as f:
     cfg = yaml.safe_load(f)
 
+# Set paths and parameters
 ticker = cfg["ticker"]
 save_path = cfg["save_path"]
 params_path = cfg["params_path"]
-initial_theta_path = cfg["initial_theta_path"]
-save_path = os.path.join('estimates', ticker, f"{ticker}_{save_path}")
-params_path = os.path.join('estimates', ticker, f"{ticker}_{params_path}")
-initial_theta_path = os.path.join('estimates', ticker, f"{ticker}_{initial_theta_path}")
+max_iter = cfg["max_iter"]
+backtracking = cfg["backtracking"]
+initial_theta_prefix = cfg["initial_theta_prefix"]
+init_max_iter = cfg["initial_theta_max_iter"]
+init_backtracking = cfg["initial_theta_backtracking"]
+init_filename = f"{ticker}_{initial_theta_prefix}_{init_max_iter}_BT_{init_backtracking}.npy"
+initial_theta_path = os.path.join(SCRIPT_DIR, 'estimates', ticker, init_filename)
+
+save_path = os.path.join(SCRIPT_DIR,"estimates", ticker, f"{ticker}_{save_path}_{max_iter}_BT_{backtracking}.npy")
+params_path = os.path.join(SCRIPT_DIR,"estimates", ticker, f"{ticker}_{params_path}_{max_iter}_BT_{backtracking}.npy")
+if cfg["train"]:
+    try:
+        initial_theta = np.load(initial_theta_path)
+        initial_theta_loaded = True
+        filename = f"{ticker}_{initial_theta_prefix}_{init_max_iter}_BT_{init_backtracking}_{max_iter}_BT_{backtracking}.npy"
+        save_path = os.path.join(SCRIPT_DIR, 'estimates', ticker, filename)
+        params_path = os.path.join(SCRIPT_DIR, 'estimates', ticker, filename)
+    except:
+        print(f"Initial theta file {initial_theta_path} not found. Using default initial theta.")
+        initial_theta = None
+        initial_theta_loaded = False
 
 # Build BG instance
 bg = BG(
@@ -37,15 +60,14 @@ bg = BG(
 
 # Fit or load
 if cfg["train"]:
-    try:
-        initial_theta = loadmat(initial_theta_path)["theta"]
-    except FileNotFoundError:
-        initial_theta = [[0.0075, 1.55, 0.0181, 0.6308]]
-    bg.fit_theta_in_batches(max_iter=cfg["max_iter"], verbose=True, backtracking=cfg["backtracking"], backtracking_params=cfg["backtracking_params"], initial_theta=initial_theta)
+    if os.path.exists(save_path):
+        print(f"Directory {save_path} already exists. Skipping training.")
+        bg.all_params = np.load(params_path)
+    else:
+        bg.fit_theta_in_batches(max_iter=cfg["max_iter"], verbose=True, backtracking=cfg["backtracking"], initial_theta=initial_theta)
 else:
-    param_path = os.path.join(script_dir, params_path)
-    if os.path.exists(param_path):
-        bg.all_params = np.load(param_path)
+    if os.path.exists(params_path):
+        bg.all_params = np.load(params_path)
     else:
         raise FileNotFoundError(f"File {params_path} not found.")
 
@@ -69,3 +91,4 @@ if np.isnan(bg.batch_losses).all():
         bg.batch_losses[t0:t1] = per_day_loss.cpu().numpy()
 
 bg.plot_diagnostics(theta_batch)
+bg.plot_params(range(bg.T))

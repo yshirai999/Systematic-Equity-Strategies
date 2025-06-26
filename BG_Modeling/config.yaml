@@ -1,16 +1,18 @@
-ticker: 'spy'
-# save_path: 'estimates\spy\spy_theta.npy'
-# params_path: 'estimates\spy\spy_theta_500_BT_init500.npy'
-train: false
+ticker: xly
+save_path: 'theta'
+params_path: 'theta'
+train: True
 window: 100
 batch_size: 256
 device: 'cuda'
 N: 16384
 B: 300000
 max_iter: 500
-backtracking: true
+backtracking: False
 backtracking_params:
   alpha: 0.1
   beta: 0.5
-  max_iter: 10
-initial_theta_path: estimates/spy_theta_500_NBT.mat"
+  max_iter: 500
+initial_theta_prefix: 'theta'
+initial_theta_max_iter: 500
+initial_theta_backtracking: False
