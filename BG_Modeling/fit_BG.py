@@ -7,6 +7,8 @@ import torch
 
 import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PLOT_DIR = os.path.join("BG_Modeling", "estimates", "plots")
+os.makedirs(PLOT_DIR, exist_ok=True)
 
 # Run this script in PowerShell to update the config.yaml file:
 # (Get-Content BG_Modeling\config.yaml) -replace 'ticker:.*', 'ticker: xlb' | Set-Content BG_Modeling\config.yaml
@@ -55,7 +57,8 @@ bg = BG(
     batch_size=cfg["batch_size"],
     ticker=cfg["ticker"],
     window=cfg["window"],
-    save_path=save_path
+    save_path=save_path,
+    plot_path=PLOT_DIR
 )
 
 # Fit or load

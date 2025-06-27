@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 import matplotlib
+
+from BG_Modeling.fit_BG import PLOT_DIR
 matplotlib.use('TkAgg')  # or try 'QtAgg' if you have it
 import matplotlib.pyplot as plt
 import random
@@ -39,7 +41,8 @@ class BG:
             ticker='spy',
             window=100,
             fit_day_indices=None,
-            save_path=None):
+            save_path=None,
+            plot_path=None):
         """
         Initialize the BG class for bilateral gamma PDF estimation using FFT.
         Parameters
@@ -98,6 +101,8 @@ class BG:
         self.all_params = np.full((self.T, 4), np.nan) 
         self.batch_losses = np.full((self.T,), np.nan)
         self.save_path = save_path
+        self.plot_path = plot_path
+        self.ticker = ticker
 
         # --------------------------------------------------------------
         # Precompute the target quantile levels
@@ -491,7 +496,8 @@ class BG:
 
             plt.tight_layout()
             plt.show()
-
+            if self.plot_path and i == 0:
+                plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_empirical_vs_theoretical_day_{cal_days[day]}.png"))
     def plot_loss_per_day(self, logscale=False):
         """
         Plot per-day loss using BG.batch_losses and BG.days.
@@ -523,6 +529,9 @@ class BG:
         plt.grid(True)
         plt.tight_layout()
         plt.show()
+        if self.plot_path:
+            plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_loss_evolution.png"))
+
 
     def plot_params(self, idx):
         idx_0 = [id-idx[0] for id in idx]
@@ -541,6 +550,8 @@ class BG:
         plt.suptitle('Parameter Evolution Over Time')
         plt.tight_layout()
         plt.show()
+        if self.plot_path:
+            plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_params_evolution.png"))
 
         # 2. Plot parameter pairs: (mup, sigmap) and (mun, sigman)
         fig, ax = plt.subplots(1, 3, figsize=(12, 5))
@@ -601,277 +612,5 @@ class BG:
 
         # Plot empirical vs theoretical quantiles for SPY on day with max loss
         idx_worst = self.batch_losses.argmax()+self.window
-        idx = [idx_worst-100,idx_worst,idx_worst+100]
-        self.plot_empirical_vs_theoretical(theta_batch, n=3, days=idx)
-
-
-# ------------------------------------------
-# Example usage
-# ------------------------------------------
-if __name__ == "__main__":
-    import numpy as np
-    import torch
-    from Models import BG
-
-    # 1) Simulate returns (4430 days, 11 assets)
-    np.random.seed(0)
-    X = np.random.randn(4430, 11)
-
-    # 2) Build BG instance with appropriate x-grid
-    bg = BG(N=4096, Xmax=0.1, device='cuda')  # Ensure it uses GPU
-
-    # 3) Fit theta over all time with batching
-    print("Fitting theta in batches...")
-    theta_spy = bg.fit_theta_in_batches(batch_size=200, max_iter=20, verbose=True)
-
-    print("Final theta shape:", theta_spy.shape)
-    print("Example SPY params at t=150:", theta_spy[150])
-
-
-
-    # # -----------------------------------------------------------------------------
-    # # Module-level helpers (must be top-level so they can be pickled):
-    # # -----------------------------------------------------------------------------
-
-    # def _fit_window_bg(args):
-    #     """
-    #     Args:
-    #       args = (t_idx, m_sub, bg_instance)
-
-    #     Returns:
-    #       (t_idx, theta_hat) where theta_hat = bg_instance.fit_bilateral_gamma(m_sub)
-    #     """
-    #     t_idx, m_sub, bg_instance = args
-    #     theta_hat = bg_instance.fit_bilateral_gamma(m_sub)
-    #     return t_idx, theta_hat
-
-
-    # def _fit_column_bg(args):
-    #     """
-    #     Args:
-    #       args = (j_idx, X_col, bg_instance, window)
-
-    #     Returns:
-    #       (j_idx, params_j) where params_j = bg_instance.fit_series(X_col, window)
-    #     """
-    #     j_idx, X_col, bg_instance, window = args
-    #     params_j = bg_instance.fit_series(X_col, window=window)
-    #     return j_idx, params_j
-
-    # def __init__(self, N=2**14, B=300000):
-    #     """
-    #     Initialize FFT grids for the BG density based on MATLAB-style FFT inversion.
-    #     Parameters
-    #     ----------
-    #     N : int   - Number of FFT points (power of 2)
-    #     B : float - Total domain width (used to compute spacing eta)
-    #     """
-        
-    #     self.N = N
-    #     self.B = B
-
-    #     self.eta = B / N
-    #     self.lambda_ = 2 * np.pi / B
-    #     self.bb = self.lambda_ * N / 2
-
-    #     self.u = np.arange(N) * self.eta
-    #     self.w = np.ones(N)
-    #     self.w[0] = 0.5  # for trapezoidal rule
-    #     self.x = -self.bb + self.lambda_ * np.arange(N)  # real-space grid
-
-    # def pdf(self, theta):
-    #     """
-    #     Compute BG PDF using FFT of the characteristic function as in the user's MATLAB code.
-    #     Parameters
-    #     ----------
-    #     theta : list or array-like [bp, cp, bn, cn]
-    #     Returns
-    #     -------
-    #     pdf_vals : array - PDF evaluated over self.x
-    #     """
-    #     bp, cp, bn, cn = theta
-
-    #     phi = ((1 - 1j * self.u * bp) ** -cp) * ((1 + 1j * self.u * bn) ** -cn)
-    #     phi *= self.w
-
-    #     fft_input = np.exp(1j * self.u * self.bb) * phi
-    #     f = np.fft.fft(fft_input) / np.pi
-    #     pdf_vals = np.real(f)
-
-    #     return pdf_vals
-
-    # @staticmethod
-    # def empirical_quantiles(m):
-    #     """
-    #     Given a 1D array m of returns, return:
-    #       Pi_target : 99-vector [0.01..0.99]
-    #       s_i       : 99-vector of empirical quantiles so CDF_emp(s_i) ≈ Pi_target[i]
-    #     """
-    #     n = len(m)
-    #     s_sorted = np.sort(m)
-    #     pi_emp = np.arange(1, n + 1) / n
-    #     Pi_target = np.linspace(0.01, 0.99, 99)
-    #     s_i = np.interp(
-    #         Pi_target, pi_emp, s_sorted,
-    #         left=s_sorted[0], right=s_sorted[-1]
-    #     )
-    #     return Pi_target, s_i
-
-    # def loss_fn(self, theta, s_i, Pi_target):
-    #     """
-    #     Weighted squared error between Pi_target and theoretical tails at s_i.
-    #     If any component of θ ≤ 0, return a large penalty.
-    #     """
-    #     bp, cp, bn, cn = theta
-    #     if (bp <= 0) or (cp <= 0) or (bn <= 0) or (cn <= 0):
-    #         return 1e6 + np.sum(np.abs(theta))
-
-    #     Pihat = self.theoretical_tails(theta, s_i)
-    #     eps = 1e-12
-    #     Pi_clipped = np.clip(Pi_target, eps, 1.0 - eps)
-    #     W = Pi_clipped * (1.0 - Pi_clipped)
-    #     sq = (Pi_target - Pihat) ** 2 / W
-    #     return np.sum(sq)
-
-    # def theoretical_tails(self, theta, s_i):
-    #     """
-    #     Given theta=[bp,cp,bn,cn] and quantile points s_i (length 99),
-    #     compute Pihat[i] = F_theta(s_i) if s_i ≤ 0, else 1 - F_theta(s_i).
-
-    #     Uses the PDF from self.pdf(theta) and a trapezoidal CDF.
-    #     """
-    #     pdf_vals = self.pdf(theta)
-    #     xgrid = self.x
-    #     dx = self.lambda_
-
-    #     # Build CDF midpoints and cumulative sums
-    #     x_mid = (xgrid[:-1] + xgrid[1:]) / 2           # (N-1,)
-    #     cdf_vals = np.cumsum((pdf_vals[:-1] + pdf_vals[1:]) / 2 * dx)  # (N-1,)
-
-    #     # Interpolator from x_mid → cdf_vals
-    #     cdf_interp = interp.interp1d(
-    #         x_mid, cdf_vals, kind='linear',
-    #         bounds_error=False, fill_value=(0.0, 1.0)
-    #     )
-
-    #     Pihat = np.empty_like(s_i)
-    #     for idx, sv in enumerate(s_i):
-    #         if sv <= x_mid[0]:
-    #             Fsv = 0.0
-    #         elif sv >= x_mid[-1]:
-    #             Fsv = 1.0
-    #         else:
-    #             Fsv = float(cdf_interp(sv))
-    #         Pihat[idx] = Fsv if (sv <= 0.0) else (1.0 - Fsv)
-
-    #     return Pihat
-
-
-    # def fit_bilateral_gamma(self, m, initial_theta=None):
-    #     """
-    #     Fit theta=[bp,cp,bn,cn] to a 1D array of returns m by matching tails.
-
-    #     Returns
-    #     -------
-    #     theta_hat : fitted 4-vector
-    #     """
-    #     Pi_target, s_i = BG.empirical_quantiles(m)
-    #     if initial_theta is None:
-    #         initial_theta = np.array([0.02, 2.0, 0.02, 2.0])
-
-    #     bounds = [(1e-6, None), (1e-6, None), (1e-6, None), (1e-6, None)]
-    #     result = minimize(
-    #         fun=self.loss_fn,
-    #         x0=initial_theta,
-    #         args=(s_i, Pi_target),
-    #         method='L-BFGS-B',
-    #         bounds=bounds,
-    #         options={'maxiter': 200, 'ftol': 1e-9}
-    #     )
-    #     if not result.success:
-    #         print("WARNING: fit did not converge:", result.message)
-    #     return result.x  # [bp, cp, bn, cn]
-
-    # def fit_series(self, series, window=100):
-    #     """
-    #     Rolling-window fit (serial) on a single 1D series of length T:
-    #         - For t < window: row stays [nan,nan,nan,nan].
-    #         - For t ≥ window: fit on series[t-window : t].
-
-    #     Returns
-    #     -------
-    #     params : array of shape (T,4).
-    #     """
-    #     T = len(series)
-    #     params = np.full((T, 4), np.nan)
-
-    #     for t in range(window, T):
-    #         m_window = series[t - window : t]
-    #         theta_hat = self.fit_bilateral_gamma(m_window)
-    #         params[t, :] = theta_hat
-
-    #     return params
-
-    # def fit_multiple(self, X, window=100, n_workers=1):
-    #     """
-    #     Fit each column of X (shape T x num_assets) via rolling-window. If n_workers>1,
-    #     parallelize across *assets* (columns). 
-
-    #     Returns
-    #     -------
-    #     all_params : array of shape (T, num_assets, 4).
-    #     """
-    #     T, num_assets = X.shape
-    #     all_params = np.full((T, num_assets, 4), np.nan)
-
-    #     # Prepare a list of (j_idx, X_col, self, window) for each asset
-    #     tasks = [(j, X[:, j], self, window) for j in range(num_assets)]
-
-    #     if n_workers is None or n_workers <= 1:
-    #         # Serial over assets
-    #         for j_idx, X_col, bg_inst, win in tasks:
-    #             _, params_j = _fit_column_bg((j_idx, X_col, bg_inst, win))
-    #             all_params[:, j_idx, :] = params_j
-    #     else:
-    #         # Parallel across assets
-    #         with concurrent.futures.ProcessPoolExecutor(max_workers=n_workers) as exe:
-    #             for j_idx, params_j in exe.map(_fit_column_bg, tasks):
-    #                 all_params[:, j_idx, :] = params_j
-
-    #     return all_params  # shape (T, num_assets, 4)
-
-    # def fit_series_parallel(series, window=100, bg_model=None, n_jobs=-1):
-    #     """
-    #     Parallelized version of fit_series using joblib. Applies BG fitting in parallel across time windows.
-
-    #     Parameters
-    #     ----------
-    #     series : np.ndarray
-    #         1D array of time series data of length T.
-    #     window : int
-    #         Rolling window size.
-    #     bg_model : object
-    #         An instance of the BG class with a `fit_bilateral_gamma` method.
-    #     n_jobs : int
-    #         Number of jobs for parallel processing. -1 means using all available cores.
-
-    #     Returns
-    #     -------
-    #     params : np.ndarray
-    #         Array of shape (T, 4) with fitted BG parameters.
-    #     """
-    #     T = len(series)
-    #     params = np.full((T, 4), np.nan)
-
-    #     def fit_at_time(t):
-    #         window_data = series[t - window:t]
-    #         return bg_model.fit_bilateral_gamma(window_data)
-
-    #     # Apply in parallel only for valid indices
-    #     results = Parallel(n_jobs=n_jobs)(
-    #         delayed(fit_at_time)(t) for t in range(window, T)
-    #     )
-
-    #     # Assign results
-    #     for i, t in enumerate(range(window, T)):
-    #         params[t, :] = results[i]
+        idx = [idx_worst,idx_worst,idx_worst+1]
+        self.plot_empirical_vs_theoretical(theta_batch, n=2, days=idx)
