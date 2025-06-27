@@ -426,7 +426,7 @@ class BG:
     # -----------------------------------------------------------------------------
     # Visualization and utility methods
     # -----------------------------------------------------------------------------
-    def plot_bg_pdfs(self, theta_batch, pdfs=None):
+    def plot_bg_pdfs(self, theta_batch, pdfs=None, show=False, returnfig=False):
         """
         Plot a batch of BG PDFs.
         
@@ -441,12 +441,13 @@ class BG:
             pdfs = self.pdf(theta_batch)
 
         x = self.x.cpu().numpy() if isinstance(self.x, torch.Tensor) else self.x
+        figures = []
 
         for i in range(B):
             theta = theta_batch[i].cpu().numpy()
             label = f"bp={theta[0]:.2e}, cp={theta[1]:.2e}, bn={theta[2]:.2e}, cn={theta[3]:.2e}"
 
-            plt.figure(figsize=(8, 4))
+            fig = plt.figure(figsize=(8, 4))
             plt.plot(x, pdfs[i].cpu().numpy(), label=label)
             plt.title(f'BG PDF Estimate - Sample {i}')
             plt.xlabel('Return')
@@ -454,9 +455,17 @@ class BG:
             plt.grid(True)
             plt.legend()
             plt.tight_layout()
-            plt.show()
 
-    def plot_empirical_vs_theoretical(self, theta_spy, n=3, seed=42, days=None, save_path=None):
+            figures.append(fig)
+            if show:
+                plt.show()
+            else:
+                plt.close(fig)
+
+        if returnfig:
+            return figures
+
+    def plot_empirical_vs_theoretical(self, theta_spy, n=3, seed=42, days=None, save_path=None, returnfig=False):
         """
         Plots empirical vs theoretical CDFs for `n` randomly selected days.
         Now splits upper and lower tails into separate subplots.
@@ -465,40 +474,50 @@ class BG:
         Pi_target = self.Pi_target    # shape (T,K)
         cal_days = self.days          # List of calibration days
 
+        # Select valid days
+        total_days = len(s_batch)
         if days is None:
-            days = range(len(cal_days))
-        
-        n = min(n, len(days))  # Ensure n does not exceed available days
-        if n == len(days):
-            days = [days[i] for i in range(len(days))]  # Use all days if n >= # available days
-        else:
             random.seed(seed)
-            days = [days[i] for i in random.sample(range(len(days)), n)]
-        days_0 = [day - days[0] for day in days]
+            days = random.sample(range(total_days), min(n, total_days))
+        else:
+            days = list(days)[:n]
 
-        theta_batch = torch.tensor(theta_spy[days_0], dtype=torch.float32).to(self.device)
-        Q_model = self.theoretical_quantiles(theta_batch, s_batch[days_0])  # shape (n, K)
+        theta_batch = torch.tensor(theta_spy[days], dtype=torch.float32).to(self.device)
+        s_selected = s_batch[days]  # Select directly, no offset math
+        Q_model = self.theoretical_quantiles(theta_batch, s_selected).cpu().detach().numpy()
 
         K = len(Pi_target)
 
-        for i, day in enumerate(days):
-            s = s_batch[day - days[0]].cpu().numpy()
-            pi_emp = Pi_target[day - days[0]]
-            pi_model = Q_model[i].detach().cpu().numpy()
+        figures = []
 
+        for i, day in enumerate(days):
+            s = s_selected[i].cpu().numpy()
+            pi_emp = Pi_target[day]
+            pi_model = Q_model[i]
+
+            fig = plt.figure()
             plt.plot(s, pi_emp, label='Empirical tails')
             plt.plot(s, pi_model, label='Theoretical tails')
             plt.title(f'Tails Fitting (day {cal_days[day]})')
             plt.xlabel('s')
             plt.grid(True)
             plt.legend()
+            figures.append(fig)
 
             plt.tight_layout()
-            if self.plot_path and i == 0 and save_path:
+            if returnfig:
+                plt.close(fig)  # Close the figure to avoid displaying it immediately
+                pass
+            elif self.plot_path and save_path and i == 0:
                 plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_empirical_vs_theoretical_day_{save_path}.png"))
-            plt.show()
+                plt.close(fig)
+            else:
+                plt.show()
+        
+        if returnfig:
+            return figures
 
-    def plot_loss_per_day(self, logscale=False):
+    def plot_loss_per_day(self, logscale=False, returnfig=False):
         """
         Plot per-day loss using BG.batch_losses and BG.days.
 
@@ -518,7 +537,7 @@ class BG:
         day_labels = pd.to_datetime(self.days[self.fit_day_indices])
         
         # Build plot
-        plt.figure(figsize=(10, 4))
+        fig = plt.figure(figsize=(10, 4))
         plt.plot(day_labels, self.batch_losses, marker='.', linestyle='-', alpha=0.8)
         plt.xlabel("Date")
         plt.ylabel("Loss per day")
@@ -530,16 +549,19 @@ class BG:
         plt.tight_layout()
         if self.plot_path:
             plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_loss_evolution.png"))
-        plt.show()
+        if returnfig:
+            plt.close()
+            return fig
+        else:
+            return None
 
-
-    def plot_params(self, idx):
+    def plot_params(self, idx, show_comps=False):
         idx_0 = [id-idx[0] for id in idx]
         bp, cp, bn, cn = self.all_params[idx_0].T
         T = self.days[idx_0]
 
         # 1. Plot each parameter over time
-        fig, axs = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
+        fig1, axs = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
         params = ['bp', 'cp', 'bn', 'cn']
         for i, param in enumerate([bp, cp, bn, cn]):
             axs[i].plot(T, param, label=params[i])
@@ -551,10 +573,11 @@ class BG:
         plt.tight_layout()
         if self.plot_path:
             plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_params_evolution.png"))
-        plt.show()
 
+        if not show_comps:
+            return fig1
         # 2. Plot parameter pairs: (mup, sigmap) and (mun, sigman)
-        fig, ax = plt.subplots(1, 3, figsize=(12, 5))
+        fig2, ax = plt.subplots(1, 3, figsize=(12, 5))
         ax[0].scatter(bp*cp, np.sqrt(bp)*cp, alpha=0.6)
         ax[0].set_xlabel('mup')
         ax[0].set_ylabel('sigmap')
@@ -572,10 +595,9 @@ class BG:
 
         plt.suptitle('Parameter Pair Relationships')
         plt.tight_layout()
-        plt.show()
 
         # 3. Plot parameter pairs: (bp, bn) and (cp, cn)
-        fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+        fig3, ax = plt.subplots(1, 2, figsize=(12, 5))
         ax[0].scatter(cp, cn, alpha=0.6)
         ax[0].set_xlabel('cp')
         ax[0].set_ylabel('bcn')
@@ -587,10 +609,9 @@ class BG:
         ax[1].set_title('bp vs bn')
 
         plt.tight_layout()
-        plt.show()
 
-        # 3. Plot parameter pairs: (bp, bn) and (cp, cn)
-        fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+        # 4. Plot parameter pairs: (bp, bn) and (cp, cn)
+        fig4, ax = plt.subplots(1, 2, figsize=(12, 5))
         ax[0].scatter(cp, bp, alpha=0.6)
         ax[0].set_xlabel('cp')
         ax[0].set_ylabel('bp')
@@ -602,7 +623,8 @@ class BG:
         ax[1].set_title('bn vs cn')
 
         plt.tight_layout()
-        plt.show()
+
+        return fig1
 
     def plot_diagnostics(self, theta_batch, save_path_empirical_vs_theoretical=False):
         self.plot_loss_per_day()
@@ -612,5 +634,5 @@ class BG:
 
         # Plot empirical vs theoretical quantiles for SPY on day with max loss
         idx_worst = self.batch_losses.argmax()+self.window
-        idx = [idx_worst,idx_worst,idx_worst+1]
+        idx = [idx_worst,idx_worst+1]
         self.plot_empirical_vs_theoretical(theta_batch, n=2, days=idx, save_path=save_path_empirical_vs_theoretical)
