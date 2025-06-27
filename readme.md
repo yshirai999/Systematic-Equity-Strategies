@@ -76,9 +76,9 @@ Parameter trajectories over training:
 
 + `(bp, bn)` loosely correspond to **average order size**.
 
-+ `(cp, cn)` control the **frequency of market orders**.
++ `(cp, cn)` control the **frequency of market orders**
 
-+ High fluctuations in `(cp, cn)` are observed during systemic stress (e.g., **2008**, **2012**, **2020**), suggesting macro sensitivity.
++ High fluctuations in `(cp, cn)` are observed during systemic stress (e.g., **2008**, **2012**, **2020**), suggesting macro sensitivity of non-professional trading activity
 
 ![Theta Evolution](BG_Modeling/estimates/plots/spy_params_evolution.png)
 
