@@ -24,15 +24,9 @@ Multivariate-Investments/
 
 ## Methodology
 
-We model the marginal distribution of each ETF's return using the Bilateral Gamma distribution. This captures:
+We model the marginal distribution of each ETF's return using the Bilateral Gamma distribution to capture skewed, heavy-tailed behavior.
 
-Skewed, heavy-tailed behavior
-
-Non-Gaussian joint dependence structures
-
-Regime shifts via bootstrapped or filtered data
-
-Estimation is done via a differentiable quantile-matching loss, weighted by an Anderson–Darling-style tail emphasis.
+Estimation is done via a differentiable tail-matching loss with Anderson–Darling weights.
 
 ### Assets Modeled
 
@@ -40,7 +34,25 @@ Calibrated ETFs include:
 
 SPY, XLB, XLE, XLF, XLI, XLK, XLU, XLV, XLY
 
-Each has its own parameter file under BG_Modeling/estimates/.
+Each asset’s return distribution is modeled using a Bilateral Gamma density, calibrated to daily returns. Parameters are stored under BG_Modeling/estimates/.
+
+The estimation procedure features:
+
++ Autograd-differentiable loss defined in PyTorch
+
++ Loss is computed via quantile-based scoring
+
++ Theoretical quantiles are derived from the BG pdf, reconstructed using torch.ifft from analytically known characteristic function
+
++ Tail-sensitive weighting based on the Anderson–Darling criterion
+
++ Optimization via Adam, combined with backtracking line search for stability
+
++ Batch GPU implementation enabling high-throughput calibration:
+
++ Over 15 years of daily data can be fit in under 15 minutes on standard GPU setups for most ETFs
+
++ Achieves accuracy on par with and often exceeding classical Nelder–Mead optimization
 
 ### Visuals (Optional Section)
 
