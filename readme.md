@@ -11,7 +11,7 @@ Multivariate-Investments/
 │   ├── fit_BG.py, Models.py      # Core MBG fitting logic
 │   ├── config.yaml               # Model + asset config
 │   ├── estimates/                # Calibrated MBG parameter files
-│   ├── theta_checkpoints/       # Model training checkpoints
+│   ├── theta_checkpoints/        # Model training checkpoints
 │
 ├── Data/
 │   └── tsd180.mat                # Source return data
@@ -30,7 +30,7 @@ Estimation is done via a differentiable tail-matching loss with Anderson–Darli
 
 ### Assets Modeled
 
-Calibrated ETFs include:
+Fitted ETF distributions include:
 
 SPY, XLB, XLE, XLF, XLI, XLK, XLU, XLV, XLY
 
@@ -68,10 +68,11 @@ conda activate mbg-env
 ### Run calibration for SPY
 
 python BG_Modeling/fit_BG.py --asset SPY --config config.yaml
-🔮 Future Work
+
+## Future Work
+
 Planned extensions include:
 
-Copula-based joint dependence modeling (Gaussian, t, Clayton)
+Copula-based joint dependence modeling (Clayton)
 
 Implementation of Dynamic Saddle Programming to solve max-min optimization problem
-
