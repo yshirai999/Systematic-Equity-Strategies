@@ -50,7 +50,7 @@ The estimation procedure features:
 
 + Batch GPU implementation enabling high-throughput calibration:
 
-+ Over 15 years of daily data can be fit in under 15 minutes on standard GPU setups for most ETFs
++ Over 15 years of daily data can be fit in under 15 minutes on standard GPU setups for most ETFs with very fine frequency space for FFT return (-2^14:2^14/300,000:+2^14), ensuring a very fine real-space grid
 
 + Achieves accuracy on par with and often exceeding classical Nelder–Mead optimization (average loss for SPY is ~0.03 against ~0.08)
 
