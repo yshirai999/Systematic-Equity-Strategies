@@ -93,5 +93,5 @@ if np.isnan(bg.batch_losses).all():
             per_day_loss = bg.quantile_loss_AD(theta_batch_t, s_batch, Pi_batch, return_per_day=True)
         bg.batch_losses[t0:t1] = per_day_loss.cpu().numpy()
 
-bg.plot_diagnostics(theta_batch)
+bg.plot_diagnostics(theta_batch,save_path_empirical_vs_theoretical="worst")
 bg.plot_params(range(bg.T))

@@ -1,4 +1,4 @@
-ticker: xly
+ticker: spy
 save_path: 'theta'
 params_path: 'theta'
 train: True

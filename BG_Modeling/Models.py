@@ -3,7 +3,6 @@ import pandas as pd
 from scipy.io import loadmat
 import matplotlib
 
-from BG_Modeling.fit_BG import PLOT_DIR
 matplotlib.use('TkAgg')  # or try 'QtAgg' if you have it
 import matplotlib.pyplot as plt
 import random
@@ -457,7 +456,7 @@ class BG:
             plt.tight_layout()
             plt.show()
 
-    def plot_empirical_vs_theoretical(self, theta_spy, n=3, seed=42, days=None):
+    def plot_empirical_vs_theoretical(self, theta_spy, n=3, seed=42, days=None, save_path=None):
         """
         Plots empirical vs theoretical CDFs for `n` randomly selected days.
         Now splits upper and lower tails into separate subplots.
@@ -495,9 +494,10 @@ class BG:
             plt.legend()
 
             plt.tight_layout()
+            if self.plot_path and i == 0 and save_path:
+                plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_empirical_vs_theoretical_day_{save_path}.png"))
             plt.show()
-            if self.plot_path and i == 0:
-                plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_empirical_vs_theoretical_day_{cal_days[day]}.png"))
+
     def plot_loss_per_day(self, logscale=False):
         """
         Plot per-day loss using BG.batch_losses and BG.days.
@@ -528,9 +528,9 @@ class BG:
         plt.title("Anderson-Darling Loss Per Day")
         plt.grid(True)
         plt.tight_layout()
-        plt.show()
         if self.plot_path:
             plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_loss_evolution.png"))
+        plt.show()
 
 
     def plot_params(self, idx):
@@ -549,9 +549,9 @@ class BG:
         axs[-1].set_xlabel('Time')
         plt.suptitle('Parameter Evolution Over Time')
         plt.tight_layout()
-        plt.show()
         if self.plot_path:
             plt.savefig(os.path.join(self.plot_path, f"{self.ticker}_params_evolution.png"))
+        plt.show()
 
         # 2. Plot parameter pairs: (mup, sigmap) and (mun, sigman)
         fig, ax = plt.subplots(1, 3, figsize=(12, 5))
@@ -604,7 +604,7 @@ class BG:
         plt.tight_layout()
         plt.show()
 
-    def plot_diagnostics(self, theta_batch):
+    def plot_diagnostics(self, theta_batch, save_path_empirical_vs_theoretical=False):
         self.plot_loss_per_day()
         print(f"Average loss per day: {self.batch_losses.mean():.4f}")
         print(f"Max loss per day: {self.batch_losses.max():.4f}")
@@ -613,4 +613,4 @@ class BG:
         # Plot empirical vs theoretical quantiles for SPY on day with max loss
         idx_worst = self.batch_losses.argmax()+self.window
         idx = [idx_worst,idx_worst,idx_worst+1]
-        self.plot_empirical_vs_theoretical(theta_batch, n=2, days=idx)
+        self.plot_empirical_vs_theoretical(theta_batch, n=2, days=idx, save_path=save_path_empirical_vs_theoretical)
