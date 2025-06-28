@@ -38,7 +38,7 @@ for ticker in ticker_list:
     else:
         continue  # Skip if ticker is not in the list
     source_path = os.path.join(target_base_dir, f"{ticker}", f"{theta_file}")
-    target_path = os.path.join(target_base_dir, f"{ticker}", f"theta_{ticker}_FINAL.npy")
+    target_path = os.path.join(target_base_dir, "FINAL", f"theta_{ticker}_FINAL.npy")
 
     print("Checking source file...")
     if not os.path.exists(source_path):

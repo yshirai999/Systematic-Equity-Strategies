@@ -1,78 +1,90 @@
+import sys, os
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+sys.path.append(PROJECT_ROOT)
+
 import numpy as np
 import torch
 from scipy.stats import t
 import os
+from tqdm import tqdm
+import time
+from scipy.linalg import logm
+
 from BG_Modeling.Models import BG 
 from ArchakovHansen import ArchakovHansen
-from scipy.linalg import logm
+
 
 # === Settings ===
 tickers = ["SPY", "XLB", "XLE", "XLF", "XLI", "XLK", "XLU", "XLV", "XLY"]
-data_dir = "../BG_Modelling/estimates"
 nu = 6  # degrees of freedom for t-copula
-save_path = "../Copula_Modeling/results/correlation_matrices"
-theta_path = "../BG_Modelling/estimates/theta_{}_FINAL.npy"
+save_path = os.path.abspath(os.path.join(PROJECT_ROOT,"t_Copula_Modeling","results","correlation_matrices"))
+theta_path = os.path.abspath(os.path.join(PROJECT_ROOT, "BG_Modeling", "estimates", "FINAL", "theta_{}_FINAL.npy"))
 os.makedirs(save_path, exist_ok=True)
 
 # === Create a BG instance per ticker ===
 bg_dict = {}
 # === Load BG objects with theta ===
 for ticker in tickers:
-    theta = np.load(theta_path.format(ticker.lower()))
+    theta = np.load(theta_path.format(ticker))
     bg = BG(device="cpu")
     bg.ticker = ticker
     bg.theta_batch = torch.tensor(theta, dtype=torch.float32)
     bg_dict[ticker] = bg
 
 # === Get return shape from one object ===
-T, W = next(iter(bg_dict.values())).returns.shape
+T, W = next(iter(bg_dict.values())).returns_matrix.shape
 N = len(tickers)
 
 # === Build 3D return tensor ===
-returns_tensor = torch.zeros((T, W, N))
+returns_tensor = np.zeros((T, W, N), dtype=np.float32)
 for i, ticker in enumerate(tickers):
-    returns_tensor[:, :, i] = bg_dict[ticker].returns
+    returns_tensor[:, :, i] = bg_dict[ticker].returns_matrix
 
 # === Compute PIT (u) and inverse t CDF (z) ===
-u_tensor = torch.zeros_like(returns_tensor)
-z_tensor = torch.zeros_like(returns_tensor)
+u_tensor = np.zeros_like(returns_tensor)  # (T, W, N)
+z_tensor = np.zeros_like(returns_tensor)
 
 for i, ticker in enumerate(tickers):
     bg = bg_dict[ticker]
-    returns_i = returns_tensor[:, :, i]  # shape (T, W)
-    # Compute CDF per return value
-    u_i = bg.compute_cdf(returns_i.unsqueeze(-1)).squeeze(-1)  # shape (T, W)
-    u_i = torch.clamp(u_i, 1e-6, 1 - 1e-6)  # prevent infs in tails
+    
+    # Step 1: Compute PDF and CDF from theta_batch
+    pdf = bg.pdf(bg.theta_batch)                    # (T, N_grid)
+    dx = bg.lambda_
+    cdf = torch.cumsum(pdf, dim=1) * dx             # (T, N_grid)
+    cdf = cdf / cdf[:, -1:].clamp(min=1e-8)
 
+    # Step 2: Interpolate at s_batch
+    s_batch = torch.tensor(bg.returns_matrix, dtype=torch.float32)
+    u_i = torch.zeros_like(s_batch)
+    for h in range(len(s_batch)):
+        u_i[h] = torch.tensor(np.interp(s_batch[h], bg.x.numpy(), cdf[h].numpy())) # Manual loop or vectorized interp if supported
+
+    # Step 3: Store clipped PIT and z values
+    u_i = np.clip(u_i.numpy(), 1e-6, 1 - 1e-6)
     u_tensor[:, :, i] = u_i
-    z_tensor[:, :, i] = torch.tensor(t.ppf(u_i.numpy(), df=nu))
-
-# Clip u to avoid infs in tails
-eps = 1e-6
-u_tensor = torch.clip(u_tensor, eps, 1 - eps)
+    z_tensor[:, :, i] = t.ppf(u_i, df=nu)
 
 # Estimate correlation matrix
 Sigma_sequence = []
 epsilon = 1e-6  # Ridge parameter for numerical stability
-for t in range(T):
-    Z_t = z_tensor[t]  # shape (W, N)
-    Z_np = Z_t.cpu().numpy()
-    empirical_corr = np.corrcoef(Z_np.T)
-    
+start_time = time.time()
+for h in tqdm(range(T), desc="Estimating daily correlation"):
+    Z_h = z_tensor[h]  # shape (W, N)
+    empirical_corr = np.corrcoef(Z_h.T)
     try:
         A = logm(empirical_corr)
     except ValueError:
-        # Add ridge and retry
-        print(f"logm failed at t={t}, adding ridge")
+        epsilon = 1e-4
         empirical_corr += epsilon * np.eye(N)
         A = logm(empirical_corr)
-    
+
     v = A[np.tril_indices(N, -1)]
     Sigma_t = ArchakovHansen(N, v, eps=1e-6)
-    
     Sigma_sequence.append(Sigma_t)
 
+print(f"\nCompleted in {time.time() - start_time:.2f} seconds.")
 
 # Save result
-np.save(os.path.join(save_path, f"..."), np.array(Sigma_sequence))
+np.save(os.path.join(save_path, f"corr_matrix_nu{nu}.npy"), np.array(Sigma_sequence))
 print("Saved correlation matrix to:", os.path.join(save_path, f"corr_matrix_nu{nu}.npy"))

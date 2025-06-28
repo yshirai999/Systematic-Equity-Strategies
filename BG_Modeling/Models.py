@@ -71,25 +71,6 @@ class BG(data):
         # Load data and prepare returns
         # ---------------------------------------------------------------
 
-        # data_path = os.path.join(PROJECT_ROOT, "Data", "tsd180.mat")
-        # mat = loadmat(data_path)
-        # d = mat['days']
-        # p = mat['pm']
-        # n = mat['nmss']
-        # [_,M] = np.shape(p)
-
-        # Data = pd.DataFrame({'days': d[:,0]})
-        # for i in range(M):
-        #     Datai = pd.DataFrame({n[i,0][0] : p[:,i]})
-        #     Data = pd.concat([Data,Datai],axis=1)
-        # self.Data = Data
-        # DataETFs = Data[[ticker]]
-        # DataETFsReturns = DataETFs.pct_change()
-        # DataETFsReturns = DataETFsReturns.drop(index = 0)
-        # DataETFsReturns.insert(0, 'days', d[1:])
-        # DataETFs.insert(0, 'days', d)
-        # DataETFsReturns['days'] = pd.to_datetime(DataETFsReturns['days'], format='%Y%m%d')
-
         self.days = self.DataETFsReturns['days'].values
         X_full = self.DataETFsReturns[ticker].values.reshape(-1, 1)  # Exclude 'days' column
         T_full, _ = X_full.shape
