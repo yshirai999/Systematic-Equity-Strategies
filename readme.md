@@ -105,6 +105,8 @@ Example: SPY–XLE Correlation Over Time
 
 The plot below shows the estimated correlation between SPY and XLE, which remains high and stable over time, as expected in equity sectors with macroeconomic co-movement:
 
+![Correlation SPY-XLE](t_Copula_Modeling/results/plots/corr_over_time.png)
+
 ## Running the Code
 
 ### Set up environment
