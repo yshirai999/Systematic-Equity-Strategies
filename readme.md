@@ -83,7 +83,7 @@ Weighted loss vs. training batch, showing stable convergence under tail-aware op
 
 Parameter trajectories over training:
 
-+ `(bp, bn)` loosely correspond to **average order size**.
++ `(bp, bn)` loosely correspond to **average limit order size**.
 
 + `(cp, cn)` control the **frequency of market orders**
 
