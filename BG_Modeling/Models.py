@@ -19,10 +19,10 @@ print("cuda is available: ", torch.cuda.is_available())
 print("GPU name: ", torch.cuda.get_device_name(0))  # Optional: Shows GPU name
 
 import os
-sys.path.append(os.path.abspath(".."))  # Go one level up
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-checkpoint_dir = "theta_checkpoints"
-os.makedirs(checkpoint_dir, exist_ok=True)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+CHECKPOINT_DIR = os.path.join(SCRIPT_DIR, "estimates", "Checkpoints")
+os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
 # -----------------------------------------------------------------------------
 # BG class:
@@ -348,7 +348,7 @@ class BG(data):
             s_batch = self.s_batch[t0:t1]  # narrow s_batch to batch window
             Pi_batch = self.Pi_target_torch[t0:t1]  # narrow Pi_target to batch window  
 
-            # Use Adam optimizer instead of LBFGS for per-day independence
+            # Use Adam optimizer instead of LBFGS to preserve inter-day independence
             optimizer = torch.optim.Adam([theta_batch], lr=1e-3, amsgrad=True)  # Use Adam optimizer
             for s in range(max_iter):
                 optimizer.zero_grad()
@@ -390,7 +390,7 @@ class BG(data):
             # Save checkpoint
             torch.save(
                 theta_batch.detach().cpu(),
-                os.path.join(checkpoint_dir, f"theta_{t0:04d}_{t1:04d}.pt")
+                os.path.join(CHECKPOINT_DIR, f"theta_{t0:04d}_{t1:04d}.pt")
             )
         if self.save_path:
             os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
