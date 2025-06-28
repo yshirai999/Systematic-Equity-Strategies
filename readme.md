@@ -114,9 +114,13 @@ The plot below shows the estimated correlation between SPY and XLE, which remain
 conda env create -f BG_Modeling/environment.yml
 conda activate mbg-env
 
-### Run calibration for SPY
+### Run fitting for SPY
 
 python BG_Modeling/fit_BG.py --asset SPY --config config.yaml
+
+### Run fitting for t-copula model
+
+python t_Copula_Modeling/fit_t_Copula.py
 
 ## Future Work
 
