@@ -7,19 +7,28 @@ This repo implements a t-copula with Bilateral Gamma marginals for joint ETFs re
 ```bash
 Multivariate-Investments/
 │
-├── BG_Modeling/
-│   ├── fit_BG.py, Models.py      # Core MBG fitting logic
-│   ├── config.yaml               # Model + asset config
-│   ├── estimates/                # Calibrated MBG parameter files
-│   ├── theta_checkpoints/        # Model training checkpoints
+├── BG_Modeling/                     # Core BG fitting logic
+│   ├── fit_BG.py, Models.py         # Model + asset config
+│   ├── config.yaml
+│   ├── estimates/                   # Fitted BG parameter files
+│   └── theta_checkpoints/           # Model training checkpoints
+│
+├── t_Copula_Modeling/               # t-Copula dependence modeling
+│   ├── fit_t_Copula.py              # Main script for correlation estimation
+│   ├── ArchakovHansen.py            # Matrix exponentiation for valid correlations
+│   ├── t_copula.py                  # PIT transform and correlation utils
+│   └── results/
+│       ├── Sigma_matrices/          # Daily correlation matrices
+│       └── plots/                   # Correlation plots (e.g., SPY–XLE)
 │
 ├── Data/
-│   └── tsd180.mat                # Source return data
+│   └── DataProcessing.py            # Basic class inhereted by BG class 
+│   └── tsd180.mat                   # Source return data
 │
-├── Deprecated/                  # Archived experimental code
+├── Deprecated/                      # Archived experimental code
 │
-├── MutlivariateFIR.ipynb        # FIR-based signal extraction
-├── readme.md                    # This file
+├── MultivariateFIR.ipynb            # FIR-based signal extraction
+└── readme.md                        # This file
 ```
 
 ## Methodology
