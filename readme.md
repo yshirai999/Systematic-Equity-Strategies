@@ -1,4 +1,4 @@
-# An End-to-End Quantitative Allocation Strategy for Equities
+# An End-to-End Quantitative Strategy for Systematic Equity Investing
 
 This repo implements a t-copula with Bilateral Gamma marginals for joint ETFs return distribution, with a focus on robust, systematic signal extraction.
 
