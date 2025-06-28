@@ -1,14 +1,16 @@
 import numpy as np
+import os
 from scipy.io import loadmat
 import pandas as pd
-from sklearn.decomposition import FastICA
 import matplotlib.pyplot as plt
 
 class data():
 
     def __init__(self, tickers = ['spy', 'xle', 'xlf', 'xli', 'xlk', 'xlp', 'xlu', 'xlv', 'xly', 'xom', 'xrx']):
         self.tickers = tickers
-        mat = loadmat('tsd180.mat')
+        base_path = os.path.dirname(__file__)
+        mat_path = os.path.join(base_path, 'tsd180.mat')
+        mat = loadmat(mat_path)
         self.d = mat['days']
         self.p = mat['pm']
         self.n = mat['nmss']
@@ -24,27 +26,8 @@ class data():
         self.DataETFsReturns = self.DataETFs.pct_change()
         self.DataETFsReturns = self.DataETFsReturns.drop(index = 0)
         self.DataETFsReturns.insert(0, 'days', self.d[1:])
+        self.DataETFs.insert(0, 'days', self.d)
         self.DataETFsReturns['days'] = pd.to_datetime(self.DataETFsReturns['days'], format='%Y%m%d')
-    
-    def ICA(self, max_iter = 500, tol = 0.1):
-        X = self.DataETFsReturns.iloc[:,1:].values
-        transformer = FastICA(n_components=10,
-            random_state=0,
-            whiten='unit-variance',
-            max_iter = max_iter,
-            tol = tol)
-        X_transformed = {}
-        W = {}
-        A = {}
-        lookbackperiod = 63
-        Failed = list()
-        for i in range(lookbackperiod,self.N):
-            X_transformed[self.DataETFsReturns['days'][i]] = transformer.fit_transform(X[i-lookbackperiod:i])
-            W[self.DataETFsReturns['days'][i]] = transformer.components_
-            A[self.DataETFsReturns['days'][i]] = transformer.mixing_
-            if transformer.n_iter_ >= max_iter:
-                Failed.append(self.d[i])
-        return [W,A, Failed]
 
     def Returns_Visualization(self, ticker: str):
         if ticker not in self.tickers:

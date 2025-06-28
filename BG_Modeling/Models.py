@@ -8,10 +8,18 @@ import matplotlib.pyplot as plt
 import random
 import torch
 
+import sys
+
+import os
+print(os.getcwd())
+
+from Data.DataProcessing import data
+
 print("cuda is available: ", torch.cuda.is_available())
 print("GPU name: ", torch.cuda.get_device_name(0))  # Optional: Shows GPU name
 
 import os
+sys.path.append(os.path.abspath(".."))  # Go one level up
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 checkpoint_dir = "theta_checkpoints"
 os.makedirs(checkpoint_dir, exist_ok=True)
@@ -20,7 +28,7 @@ os.makedirs(checkpoint_dir, exist_ok=True)
 # BG class:
 # -----------------------------------------------------------------------------
 
-class BG:
+class BG(data):
     """
     Bilateral-Gamma tail-matching and rolling-window fitting utilities.
 
@@ -38,6 +46,7 @@ class BG:
             device=None,
             batch_size=256,
             ticker='spy',
+            tickers = ['spy', 'xle', 'xlf', 'xli', 'xlk', 'xlp', 'xlu', 'xlv', 'xly', 'xom', 'xrx'],
             window=100,
             fit_day_indices=None,
             save_path=None,
@@ -50,7 +59,7 @@ class BG:
         B      : float   - Half-width of support; domain is [-pi*N/B, pi*N/B), frequency spacing is B/N.
         device : torch.device or str (optional) - 'cpu' or 'cuda'
         """
-
+        super().__init__(tickers=tickers)
         # --------------------------------------------------------------
         # Basic parameters
         # --------------------------------------------------------------
@@ -62,27 +71,27 @@ class BG:
         # Load data and prepare returns
         # ---------------------------------------------------------------
 
-        data_path = os.path.join(PROJECT_ROOT, "Data", "tsd180.mat")
-        mat = loadmat(data_path)
-        d = mat['days']
-        p = mat['pm']
-        n = mat['nmss']
-        [_,M] = np.shape(p)
+        # data_path = os.path.join(PROJECT_ROOT, "Data", "tsd180.mat")
+        # mat = loadmat(data_path)
+        # d = mat['days']
+        # p = mat['pm']
+        # n = mat['nmss']
+        # [_,M] = np.shape(p)
 
-        Data = pd.DataFrame({'days': d[:,0]})
-        for i in range(M):
-            Datai = pd.DataFrame({n[i,0][0] : p[:,i]})
-            Data = pd.concat([Data,Datai],axis=1)
+        # Data = pd.DataFrame({'days': d[:,0]})
+        # for i in range(M):
+        #     Datai = pd.DataFrame({n[i,0][0] : p[:,i]})
+        #     Data = pd.concat([Data,Datai],axis=1)
+        # self.Data = Data
+        # DataETFs = Data[[ticker]]
+        # DataETFsReturns = DataETFs.pct_change()
+        # DataETFsReturns = DataETFsReturns.drop(index = 0)
+        # DataETFsReturns.insert(0, 'days', d[1:])
+        # DataETFs.insert(0, 'days', d)
+        # DataETFsReturns['days'] = pd.to_datetime(DataETFsReturns['days'], format='%Y%m%d')
 
-        DataETFs = Data[[ticker]]
-        DataETFsReturns = DataETFs.pct_change()
-        DataETFsReturns = DataETFsReturns.drop(index = 0)
-        DataETFsReturns.insert(0, 'days', d[1:])
-        DataETFs.insert(0, 'days', d)
-        DataETFsReturns['days'] = pd.to_datetime(DataETFsReturns['days'], format='%Y%m%d')
-        self.days = DataETFsReturns['days'].values
-
-        X_full = DataETFsReturns.iloc[:, 1:].values  # exclude 'days' column
+        self.days = self.DataETFsReturns['days'].values
+        X_full = self.DataETFsReturns[ticker].values.reshape(-1, 1)  # Exclude 'days' column
         T_full, _ = X_full.shape
 
         # Determine which days to include for fitting

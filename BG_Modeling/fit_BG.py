@@ -1,3 +1,11 @@
+import sys, os
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+CONFIG_DIR = os.path.join(SCRIPT_DIR, "config.yaml")
+PLOT_DIR = os.path.join("BG_Modeling", "estimates", "plots")
+sys.path.append(PROJECT_ROOT)
+os.makedirs(PLOT_DIR, exist_ok=True)
+
 import yaml
 from Models import BG
 
@@ -5,10 +13,7 @@ import numpy as np
 from scipy.io import loadmat
 import torch
 
-import os
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PLOT_DIR = os.path.join("BG_Modeling", "estimates", "plots")
-os.makedirs(PLOT_DIR, exist_ok=True)
+
 
 # Run this script in PowerShell to update the config.yaml file:
 # (Get-Content BG_Modeling\config.yaml) -replace 'ticker:.*', 'ticker: xlb' | Set-Content BG_Modeling\config.yaml
@@ -17,10 +22,7 @@ os.makedirs(PLOT_DIR, exist_ok=True)
 # (Get-Content BG_Modeling\config.yaml) -replace 'backtracking:.*', 'backtracking: False' | Set-Content BG_Modeling\config.yaml
 # Tickers: spy, xlb, xle, xlf, xli, xlk, xlp, xlu, xlv, xly
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(script_dir, "config.yaml")
-
-with open(config_path, "r") as f:
+with open(CONFIG_DIR, "r") as f:
     cfg = yaml.safe_load(f)
 
 # Set paths and parameters
