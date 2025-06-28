@@ -1,4 +1,4 @@
-# Multivariate Investments — BG Modeling and Systematic Analysis
+# An End-to-End Quantitative Allocation Strategy for Equities
 
 This repo implements a t-copula with Bilateral Gamma marginals for joint ETFs return distribution, with a focus on robust, systematic signal extraction.
 
