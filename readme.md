@@ -1,6 +1,6 @@
 # Multivariate Investments — BG Modeling and Systematic Analysis
 
-This repo implements a Clayton's copula with Bilateral Gamma marginals for joint ETFs return distribution, with a focus on robust, systematic signal extraction.
+This repo implements a t-copula with Bilateral Gamma marginals for joint ETFs return distribution, with a focus on robust, systematic signal extraction.
 
 ## Project Structure
 
