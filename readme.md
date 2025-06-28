@@ -126,6 +126,6 @@ python t_Copula_Modeling/fit_t_Copula.py
 
 Planned extensions include:
 
-Copula-based joint dependence modeling (Clayton)
-
 Implementation of Dynamic Saddle Programming to solve max-min optimization problem
+
+Assess measures of performance
