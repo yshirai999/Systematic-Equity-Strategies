@@ -84,6 +84,29 @@ Parameter trajectories over training:
 
 All plots are saved under: BG_Modelling/estimates/plots
 
+## Modeling Dependence with t-Copula
+
+To account for the cross-sectional dependence between sector ETFs, we implemented a time-varying multivariate t-copula model. This method allows for modeling non-linear dependencies and tail dependence, which are commonly observed in financial markets but not captured by standard Gaussian assumptions.
+
+Steps Taken:
+Marginal Fit: For each ETF, we used the GPU-accelerated BG model to estimate marginal distributions across a rolling 100-day window.
+
+Probability Integral Transform (PIT): Transformed marginal returns into uniform variables via the BG-fitted CDFs.
+
+t-Inverse Transformation: Converted the uniform samples to pseudo-observations using the inverse t CDF (with 6 degrees of freedom).
+
+Time-Varying Correlation Estimation: Applied the Archakov–Hansen exponential mapping to ensure each day’s correlation matrix is symmetric and positive semidefinite.
+
+Validation: Verified that the estimated matrices were valid across all 4,330 days in the dataset.
+
+Performance: Full estimation completed in ~25 seconds for 11 ETFs over 4,330 days.
+
+Example: SPY–XLE Correlation Over Time
+
+The plot below shows the estimated correlation between SPY and XLE, which remains high and stable over time, as expected in equity sectors with macroeconomic co-movement:
+
+![Correlation SPY-XLE](t_Copula_Modeling/results/plots/corr_over_time.png)
+
 ## Running the Code
 
 ### Set up environment

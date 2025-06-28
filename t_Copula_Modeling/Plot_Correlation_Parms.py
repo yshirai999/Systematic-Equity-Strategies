@@ -6,6 +6,7 @@ sys.path.append(PROJECT_ROOT)
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from itertools import permutations
 
 from Data.DataProcessing import data
 
@@ -17,14 +18,35 @@ PLOT_PATH = os.path.join(PLOT_DIR, "corr_over_time.png")
 # Load days and returns data
 data_obj = data()
 days = data_obj.DataETFsReturns['days'].values
+days = days[100:]
 
 # Load correlation tensor
 corr_tensor = np.load(os.path.join(SAVE_PATH, "corr_matrix_nu6.npy"))  # shape (T, N, N)
+
+# Check positive semidefiniteness of each correlation matrix
+def is_positive_semidefinite(matrix, tol=1e-8):
+    eigvals = np.linalg.eigvalsh(matrix)
+    return np.all(eigvals >= -tol), eigvals
+
+non_psd_days = []
+
+for t in range(corr_tensor.shape[0]):
+    is_psd, eigvals = is_positive_semidefinite(corr_tensor[t])
+    if not is_psd:
+        non_psd_days.append((t, eigvals.min()))
+
+if non_psd_days:
+    print(f"{len(non_psd_days)} non-PSD matrices found:")
+    for day, min_eig in non_psd_days:
+        print(f" - Day {day}: min eigenvalue = {min_eig}")
+else:
+    print("All correlation matrices are positive semidefinite.")
+
+# Plot correlations over time
 tickers = ['spy', 'xle', 'xlf', 'xli', 'xlk', 'xlp', 'xlu', 'xly']
-pairs = [('spy', 'xle'), ('spy', 'xlp'), ('xlf', 'xlu')]
+pairs = [('spy', 'xle')]
+pairs = np.array(list(permutations(tickers, 2)))
 indices = [(tickers.index(i), tickers.index(j)) for i, j in pairs]
-
-
 
 T = corr_tensor.shape[0]
 for (i, j), label in zip(indices, pairs):
