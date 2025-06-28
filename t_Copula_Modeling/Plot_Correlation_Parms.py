@@ -45,7 +45,7 @@ else:
 # Plot correlations over time
 tickers = ['spy', 'xle', 'xlf', 'xli', 'xlk', 'xlp', 'xlu', 'xly']
 pairs = [('spy', 'xle')]
-pairs = np.array(list(permutations(tickers, 2)))
+#pairs = np.array(list(permutations(tickers, 2)))
 indices = [(tickers.index(i), tickers.index(j)) for i, j in pairs]
 
 T = corr_tensor.shape[0]

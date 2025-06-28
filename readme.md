@@ -97,7 +97,7 @@ t-Inverse Transformation: Converted the uniform samples to pseudo-observations u
 
 Time-Varying Correlation Estimation: Applied the Archakov–Hansen exponential mapping to ensure each day’s correlation matrix is symmetric and positive semidefinite.
 
-Validation: Verified that the estimated matrices were valid across all 4,330 days in the dataset.
+Validation: Verified that the estimated matrices were positive semidefinite across all 4,330 days in the dataset.
 
 Performance: Full estimation completed in ~25 seconds for 11 ETFs over 4,330 days.
 
