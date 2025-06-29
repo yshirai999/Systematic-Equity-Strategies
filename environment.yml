@@ -7,10 +7,11 @@ dependencies:
   - python=3.10
   - pandas
   - numpy
+  - scipy
   - matplotlib
   - seaborn
   - yfinance
-  - scikit-le
+  - scikit-learn
   - jupyterlab
   - ipykernel
   - cvxpy
