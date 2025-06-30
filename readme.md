@@ -5,13 +5,38 @@ This repo implements a t-copula with Bilateral Gamma (BG) marginals for joint ET
 ## Project Structure
 
 ```bash
-Multivariate-Investments/
+Systematic-Equity-Strategies/
 │
 ├── BG_Modeling/                     # Core BG fitting logic
 │   ├── fit_BG.py, Models.py         # Model + asset config
 │   ├── config.yaml
 │   ├── estimates/                   # Fitted BG parameter files
 │   └── theta_checkpoints/           # Model training checkpoints
+│
+├── Data/
+│   └── DataProcessing.py            # Basic class inhereted by BG class 
+│   └── tsd180.mat                   # Source return data
+│
+├── Deprecated/                      # Archived experimental code
+│
+├── Optimizers/
+│   └── DSP/
+│       ├── dsp_solver.py            # General DSP problem class
+│       ├── rebate_functions.py      # r(Z), Phi(a), minmaxvar
+│       ├── simulate_joint.py        # Sampled returns from BG, copula, etc.
+│       ├── constraints_utils.py     # Builds Phi(a) and a-grid
+│       └── tests/
+│           └── test_dsp_solver.py
+│
+├── Strategies/
+│   ├── BG_tCopula_Strategy/
+│   │   ├── strategy.py              # Load BG + Copula, run DSP, simulate trading
+│   │   ├── pnl.py                   # PnL tracking, positions, etc.
+│   │   └── plots/
+│   │       ├── account_value.png
+│   │       └── position_corrs.png
+│   └── GAN_Regime_Strategy/
+│       └── [Future implementation]
 │
 ├── t_Copula_Modeling/               # t-Copula dependence modeling
 │   ├── fit_t_Copula.py              # Main script for correlation estimation
@@ -20,12 +45,6 @@ Multivariate-Investments/
 │   └── results/
 │       ├── Sigma_matrices/          # Daily correlation matrices
 │       └── plots/                   # Correlation plots (e.g., SPY–XLE)
-│
-├── Data/
-│   └── DataProcessing.py            # Basic class inhereted by BG class 
-│   └── tsd180.mat                   # Source return data
-│
-├── Deprecated/                      # Archived experimental code
 │
 ├── MultivariateFIR.ipynb            # FIR-based signal extraction
 └── readme.md                        # This file
