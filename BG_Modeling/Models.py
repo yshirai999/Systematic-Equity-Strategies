@@ -462,7 +462,7 @@ class BG(data):
         """
         s_batch = self.s_batch          # shape (T, K)
         Pi_target = self.Pi_target    # shape (T,K)
-        cal_days = self.days          # List of calibration days
+        cal_days = self.days          # List of days estimated
 
         # Select valid days
         total_days = len(s_batch)

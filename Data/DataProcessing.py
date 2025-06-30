@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 class data():
 
-    def __init__(self, tickers = ['spy', 'xle', 'xlf', 'xli', 'xlk', 'xlp', 'xlu', 'xlv', 'xly', 'xom', 'xrx']):
+    def __init__(self, tickers = ['spy', 'xlb', 'xle', 'xlf', 'xli', 'xlk', 'xlu', 'xlv', 'xly']):
         self.tickers = tickers
         base_path = os.path.dirname(__file__)
         mat_path = os.path.join(base_path, 'tsd180.mat')

@@ -14,7 +14,7 @@ dependencies:
   - scikit-learn
   - jupyterlab
   - ipykernel
-  - cvxpy
+  - cvxpy==1.1.15
   - pip
   - pip:
       - statsmodels
