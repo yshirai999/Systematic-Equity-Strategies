@@ -137,6 +137,8 @@ The plot below shows the estimated correlation between SPY and XLE, which remain
 
 ![Correlation SPY-XLE 252 days](t_Copula_Modeling/results/plots/corr_over_time_w252.png)
 
+![Correlation SPY-XLE 252 days](t_Copula_Modeling/results/plots/level_curves_joint_pdf_w100.png)
+
 ## Running the Code
 
 ### Set up environment
