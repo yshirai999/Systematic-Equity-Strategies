@@ -7,9 +7,9 @@ import time
 from Backtesting import DSPBacktester
 
 # Define save directory relative to current file
-save_dir = os.path.join(os.path.dirname(__file__), 'Results')
-os.makedirs(save_dir, exist_ok=True)
-save_path = os.path.join(save_dir, "backtest_results.npy")
+SAVE_DIR = os.path.join(os.path.dirname(__file__), 'Results')
+os.makedirs(SAVE_DIR, exist_ok=True)
+SAVE_PATH = os.path.join(SAVE_DIR, "backtest_results.npy")
 
 def compute_weights_all_args(args):
     date_idx, tickers, lam, J, df, rebalance_every, decay = args
@@ -19,17 +19,18 @@ def compute_weights_all_args(args):
 
 def run_parallel_backtest(tickers, lam, J, df, rebalance_every, decay, start_idx, end_idx):
     date_indices = list(range(start_idx, end_idx, rebalance_every))
-    args_list = [(date_idx, tickers, lam, J, df, rebalance_every, decay) for date_idx in date_indices]
+    args_list = [(date_idx, tickers, lam, J, df, rebalance_every, decay) for date_idx in date_indices]  
 
     num_procs = max(mp.cpu_count() - 2, 1)
     print(f"Launching parallel backtest using {num_procs} processes")
     start_time = time.time()
 
     results = []
-    
-    if save_path:
-        print(f"Confirm you want to save results to {save_path}? (y/n)")
+
+    if SAVE_PATH:
+        print(f"Confirm you want to save results to {SAVE_PATH}? (y/n)")
         confirm = input().strip().lower()
+        save_path = SAVE_PATH
         if confirm != 'y':
             print("Results will not be saved.")
             save_path = None
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     decay = 0.95
 
     bt = run_parallel_backtest(
-        tickers=tickers, J=J, df=df,
+        tickers=tickers, lam=lam, J=J, df=df,
         rebalance_every=rebalance_every, decay=decay,
         start_idx=0, end_idx=4330
     )

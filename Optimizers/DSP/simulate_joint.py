@@ -69,8 +69,6 @@ class JointReturnSimulator:
         corr_cube = np.load(os.path.join(self.path_corr, f"corr_matrix_w{window}.npy"))  # shape: (4330, M, M)
         self.C = corr_cube[idx]
 
-        print(self.C.shape)
-
         # Step 1: simulate t-copula samples
         np.random.seed(42)
         z = np.random.multivariate_normal(np.zeros(self.M), self.C, size=self.J)
