@@ -12,14 +12,14 @@ os.makedirs(save_dir, exist_ok=True)
 save_path = os.path.join(save_dir, "backtest_results.npy")
 
 def compute_weights_all_args(args):
-    date_idx, tickers, J, df, rebalance_every, decay = args
+    date_idx, tickers, lam, J, df, rebalance_every, decay = args
     bt = DSPBacktester(tickers=tickers, J=J, df=df,
-                       rebalance_every=rebalance_every, decay=decay)
+                       lam=lam, rebalance_every=rebalance_every, decay=decay)
     return bt.compute_weights_on_date(date_idx)
 
-def run_parallel_backtest(tickers, J, df, rebalance_every, decay, start_idx, end_idx):
+def run_parallel_backtest(tickers, lam, J, df, rebalance_every, decay, start_idx, end_idx):
     date_indices = list(range(start_idx, end_idx, rebalance_every))
-    args_list = [(date_idx, tickers, J, df, rebalance_every, decay) for date_idx in date_indices]
+    args_list = [(date_idx, tickers, lam, J, df, rebalance_every, decay) for date_idx in date_indices]
 
     num_procs = max(mp.cpu_count() - 2, 1)
     print(f"Launching parallel backtest using {num_procs} processes")
@@ -54,6 +54,7 @@ def run_parallel_backtest(tickers, J, df, rebalance_every, decay, start_idx, end
 
 if __name__ == "__main__":
     tickers = ['spy', 'xlb', 'xle', 'xlf', 'xli', 'xlk', 'xlu', 'xlv', 'xly']
+    lam = 0.75
     J = 10000
     df = 6
     rebalance_every = 10

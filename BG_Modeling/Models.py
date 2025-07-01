@@ -46,7 +46,7 @@ class BG(data):
             device=None,
             batch_size=256,
             ticker='spy',
-            tickers = ['spy', 'xle', 'xlf', 'xli', 'xlk', 'xlp', 'xlu', 'xlv', 'xly', 'xom', 'xrx'],
+            tickers = ['spy', 'xlb', 'xle', 'xlf', 'xli', 'xlk', 'xlu', 'xlv', 'xly'],
             window=100,
             fit_day_indices=None,
             save_path=None,

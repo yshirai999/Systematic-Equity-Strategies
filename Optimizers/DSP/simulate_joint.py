@@ -31,13 +31,16 @@ class JointReturnSimulator:
         self.valid_returns = self.data_handler.DataETFsReturns.iloc[self.window:].drop(columns="days").values
         self.valid_dates = self.dates[self.window:]  # Valid dates after the window
 
-    def simulate_t_Copula(self, date_str=None):
+    def simulate_t_Copula(self, date_str=None, window=None):
         """
         Generate J samples from the t-Copula + BG marginal distribution.
 
         Returns:
             np.ndarray: shape (J, M) simulated return matrix
         """
+        if not window:
+            window = self.window
+
         # Step 0: Load parameters
         target_date = np.datetime64(date_str)
 
@@ -49,7 +52,7 @@ class JointReturnSimulator:
 
         if idx < 0:
             raise ValueError(f"Date '{date_str}' is too early to have model parameters "
-                            f"(needs at least {self.window} prior days)")
+                            f"(needs at least {window} prior days)")
 
         if idx is None:
             raise ValueError("Index not set. Call 'simulate_t_Copula' with a valid date_str first.")
@@ -63,8 +66,10 @@ class JointReturnSimulator:
             self.cn.append(cn)
 
         # Load full time series of correlation matrices and extract correct day
-        corr_cube = np.load(os.path.join(self.path_corr, f"corr_matrix_nu{self.df}.npy"))  # shape: (4330, M, M)
+        corr_cube = np.load(os.path.join(self.path_corr, f"corr_matrix_w{window}.npy"))  # shape: (4330, M, M)
         self.C = corr_cube[idx]
+
+        print(self.C.shape)
 
         # Step 1: simulate t-copula samples
         np.random.seed(42)

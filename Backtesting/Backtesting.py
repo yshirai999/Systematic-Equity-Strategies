@@ -11,7 +11,7 @@ class DSPBacktester(DSPOptimizer):
                 window=100,
                 J=10000,
                 df=6,
-                lam=2,
+                lam=0.75,
                 theta=0.5,
                 alpha=1.25,
                 beta=0.25,

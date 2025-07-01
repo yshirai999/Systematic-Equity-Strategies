@@ -13,15 +13,18 @@ from Data.DataProcessing import data
 SAVE_PATH = os.path.join(PROJECT_ROOT, "t_Copula_Modeling", "results", "correlation_matrices")
 PLOT_DIR = os.path.join(PROJECT_ROOT, "t_Copula_Modeling", "results", "plots")
 os.makedirs(PLOT_DIR, exist_ok=True)
-PLOT_PATH = os.path.join(PLOT_DIR, "corr_over_time.png")
 
 # Load days and returns data
+window = 100
+nu = 6
 data_obj = data()
 days = data_obj.DataETFsReturns['days'].values
-days = days[100:]
+days = days[window:]
+
+PLOT_PATH = os.path.join(PLOT_DIR, f"corr_over_time_w{window}.png")
 
 # Load correlation tensor
-corr_tensor = np.load(os.path.join(SAVE_PATH, "corr_matrix_nu6.npy"))  # shape (T, N, N)
+corr_tensor = np.load(os.path.join(SAVE_PATH, f"corr_matrix_w{window}.npy"))  # shape (T, N, N)
 
 # Check positive semidefiniteness of each correlation matrix
 def is_positive_semidefinite(matrix, tol=1e-8):
@@ -47,14 +50,15 @@ tickers = ['spy', 'xle', 'xlf', 'xli', 'xlk', 'xlp', 'xlu', 'xly']
 pairs = [('spy', 'xle')]
 #pairs = np.array(list(permutations(tickers, 2)))
 indices = [(tickers.index(i), tickers.index(j)) for i, j in pairs]
-
+#print(f"Plotting {len(indices)} pairs: {pairs}, indices: {indices}")
 T = corr_tensor.shape[0]
 for (i, j), label in zip(indices, pairs):
-    plt.plot(range(T), corr_tensor[:, i, j], label=f"{label[0]}-{label[1]}")
+    print(f"Plotting pair: {tickers[i]}, {tickers[j]}")
+    plt.plot(range(T), (2/np.pi)*np.arcsin(corr_tensor[:, i, j]), label=f"{label[0]}-{label[1]}")
 
 plt.xticks(ticks=np.linspace(0, len(days)-1, 8, dtype=int), labels=pd.Series(days).iloc[np.linspace(0, len(days)-1, 8, dtype=int)].dt.strftime('%Y-%m'))
 plt.xlabel("Date")
-plt.title("Time-Varying Correlation")
+plt.title(f"Time-Varying Correlation with window = {window}")
 plt.ylabel("Correlation")
 plt.legend()
 plt.grid(True)
