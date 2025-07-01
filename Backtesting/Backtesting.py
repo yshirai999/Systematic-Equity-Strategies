@@ -70,19 +70,13 @@ class DSPBacktester(DSPOptimizer):
 
         return (date_str, w_opt)
 
-    def store_backtest_results(self, results, start_idx, end_idx):
+    def store_backtest_results(self, results, start_idx, end_idx, save_path=None):
         """ Store the results of the backtest run. """
-        if not results:
-            raise ValueError("No results to store. Run 'run_backtest' first.")
-
-        # Define save directory relative to current file
-        save_dir = os.path.join(os.path.dirname(__file__), 'Results')
-        os.makedirs(save_dir, exist_ok=True)
-        save_path = os.path.join(save_dir, "backtest_results.npy")
 
         # Save results using object dtype to avoid inhomogeneous shape errors
-        np.save(save_path, np.array(results, dtype=object), allow_pickle=True)
-        print(f"Results saved to {save_path}")
+        if save_path:
+            np.save(save_path, np.array(results, dtype=object), allow_pickle=True)
+            print(f"Results saved to {save_path}")
 
         self.results = results
         w_total = np.zeros(len(self.tickers))
@@ -112,10 +106,10 @@ class DSPBacktester(DSPOptimizer):
             self.rebalance_dates.append(self.valid_dates[t])
 
     def performance(self):
-        returns = np.cumsum(self.pnl_history)
-        
-        mean_return = np.mean(returns)
-        volatility = np.std(returns)
+        pnl = np.array(self.pnl_history)
+
+        mean_return = np.mean(pnl)
+        volatility = np.std(pnl)
 
         annual_factor = 252 // self.rebalance_every  # Assuming daily data, rebalance every k days
         annual_return = (1 + mean_return) ** annual_factor - 1
@@ -127,7 +121,7 @@ class DSPBacktester(DSPOptimizer):
         print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
 
         plt.figure(figsize=(10,5))
-        plt.plot(self.rebalance_dates, returns, label="Period Return")
+        plt.plot(self.rebalance_dates, pnl, label="Period Return")
         plt.grid(True)
         plt.title("DSP Strategy Period Return")
         plt.xlabel("Date")
