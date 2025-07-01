@@ -145,7 +145,6 @@ estimates/Checkpoints/
 *.hdf5
 
 # Plot outputs
-*.png
 *.jpg
 *.jpeg
 *.pdf
