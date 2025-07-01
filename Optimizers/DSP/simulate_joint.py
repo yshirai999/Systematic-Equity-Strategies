@@ -8,8 +8,11 @@ DATA_DIR = os.path.join(ROOT_DIR, "BG_Modeling", "estimates", "FINAL")
 CORR_DIR = os.path.join(ROOT_DIR, "t_Copula_Modeling", "results", "correlation_matrices")
 
 class JointReturnSimulator:
-    def __init__(self, date_str, tickers=['spy', 'xlb', 'xle', 'xlf', 'xli', 'xlk', 'xlu', 'xlv', 'xly'], window=100, J=10000, df=6):
-        self.date_str = date_str
+    def __init__(self,
+                tickers=['spy', 'xlb', 'xle', 'xlf', 'xli', 'xlk', 'xlu', 'xlv', 'xly'],
+                window=100,
+                J=10000,
+                df=6):
         self.tickers = tickers
         self.J = J
         self.df = df
@@ -24,31 +27,36 @@ class JointReturnSimulator:
         # Load data object (lowercase class: data) and match index
         self.data_handler = data(tickers=self.tickers)
         self.dates = self.data_handler.DataETFsReturns['days'].values
+        self.window = window
+        self.valid_returns = self.data_handler.DataETFsReturns.iloc[self.window:].drop(columns="days").values
+        self.valid_dates = self.dates[self.window:]  # Valid dates after the window
 
-        # Convert date_str and check if it's in the data
-        target_date = np.datetime64(self.date_str)
-        if target_date not in self.dates:
-            raise ValueError(f"Date '{self.date_str}' not found in available data range "
-                            f"({self.dates[0]} to {self.dates[-1]})")
+    def simulate_t_Copula(self, date_str=None):
+        """
+        Generate J samples from the t-Copula + BG marginal distribution.
 
-        self.idx = int(np.where(self.dates == target_date)[0][0])
-        self.window = window  # Or whatever rolling length you used
-        self.idx = int(np.where(self.dates == target_date)[0][0]) - self.window
+        Returns:
+            np.ndarray: shape (J, M) simulated return matrix
+        """
+        # Step 0: Load parameters
+        target_date = np.datetime64(date_str)
 
-        if self.idx < 0:
-            raise ValueError(f"Date '{self.date_str}' is too early to have model parameters "
+        if target_date not in self.valid_dates:
+            raise ValueError(f"Date '{target_date}' not found in available data range "
+                            f"({self.valid_dates[0]} to {self.valid_dates[-1]})")
+
+        idx = int(np.where(self.valid_dates == target_date)[0][0])
+
+        if idx < 0:
+            raise ValueError(f"Date '{date_str}' is too early to have model parameters "
                             f"(needs at least {self.window} prior days)")
 
-
-        self.load_parameters()
-
-
-    def load_parameters(self):
-        """Load per-ticker marginal BG parameters and daily correlation matrix."""
+        if idx is None:
+            raise ValueError("Index not set. Call 'simulate_t_Copula' with a valid date_str first.")
         for ticker in self.tickers:
             file = os.path.join(self.path_params, f"theta_{ticker.upper()}_FINAL.npy")
             theta_matrix = np.load(file)  # shape: (4330, 4)
-            bp, cp, bn, cn = theta_matrix[self.idx]
+            bp, cp, bn, cn = theta_matrix[idx]
             self.bp.append(bp)
             self.cp.append(cp)
             self.bn.append(bn)
@@ -56,16 +64,10 @@ class JointReturnSimulator:
 
         # Load full time series of correlation matrices and extract correct day
         corr_cube = np.load(os.path.join(self.path_corr, f"corr_matrix_nu{self.df}.npy"))  # shape: (4330, M, M)
-        self.C = corr_cube[self.idx]
+        self.C = corr_cube[idx]
 
-    def simulate_t_Copula(self):
-        """
-        Generate J samples from the t-Copula + BG marginal distribution.
-
-        Returns:
-            np.ndarray: shape (J, M) simulated return matrix
-        """
         # Step 1: simulate t-copula samples
+        np.random.seed(42)
         z = np.random.multivariate_normal(np.zeros(self.M), self.C, size=self.J)
         chi2 = np.random.chisquare(self.df, size=self.J)
         t_samples = z / np.sqrt(chi2[:, None] / self.df)
