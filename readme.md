@@ -7,16 +7,16 @@ This repo implements a t-copula with Bilateral Gamma (BG) marginals for joint ET
 ```bash
 Systematic-Equity-Strategies/
 │
-├── readme.md                       # This file - project overview
-├── environment.yml                 # Conda environment specification
-├── .gitignore                      # Git ignore patterns
-├── .git/                           # Git repository files
+├── readme.md                      # This file - project overview
+├── environment.yml                # Conda environment specification
+├── .gitignore                     # Git ignore patterns
+├── .git/                          # Git repository files
 │
-├── Data/                           # Data processing and source files
-│   ├── DataProcessing.py           # Basic data class inherited by BG class
-│   ├── tsd180.mat                  # Source return data (MATLAB format)
+├── Data/                          # Data processing and source files
+│   ├── DataProcessing.py          # Basic data class inherited by BG class
+│   ├── tsd180.mat                 # Source return data (MATLAB format)
 │
-├── Modeling/                        # Return distribution modeling
+├── Modeling/                      # Return distribution modeling
 │   ├── readme.md                  # Modeling overview and methodology
 │   ├── BG_Modeling/               # Bilateral Gamma distribution fitting
 │   │   ├── fit_BG.py              # Main fitting script
