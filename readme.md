@@ -63,7 +63,7 @@ A systematic strategy is then implemented by rebalancing the portfolio weights e
 
 ## Results
 
-So far, no conclusive evidence that investing in the portfolio thus constructed provides superior performance with respect to a simple buy and hold strategy on SPY
+So far, no conclusive evidence that a buy and hold strategy for the portfolio so constructed provides superior performance with respect to a buy and hold strategy on SPY.
 
 However, while performance is not yet consistently superior to SPY, DSP demonstrates periods of comparable Sharpe ratios, suggesting potential in incorporating tail-aware risk modeling in systematic equity investing.
 
