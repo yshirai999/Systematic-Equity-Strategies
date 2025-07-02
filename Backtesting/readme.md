@@ -2,6 +2,21 @@
 
 This folder contains the code responsible for evaluating strategy performance using historical data. It includes the core logic for executing dynamic strategies and measuring relevant performance metrics.
 
+## Directory Structure
+
+```bash
+Backtesting/
+│
+├── readme.md                        # This file - backtesting overview
+├── Backtesting.py                   # DSPBacktester class implementation
+├── run_parallel_backtest.py         # Parallel backtest execution logic
+├── analyze_performance.py           # Performance analysis and metrics
+└── Results/                         # Backtest results and visualizations
+    ├── backtest_results_0_4330_50.npy  # Backtest results (lambda=50)
+    ├── backtest_results_0_4330_75.npy  # Backtest results (lambda=75)
+    └── rolling_sharpe_ratio_comparison.png  # Performance visualization
+```
+
 ## Contents
 
 - **Backteststing.py**: Implements the DSPBacktester class, which inherits from the DSPOptimizer class in the Optimizers folder; applies the optimized weights from the DSP procedure to historical asset returns to simulate portfolio performance over time.
