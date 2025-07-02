@@ -27,6 +27,8 @@ class DSPBacktester(DSPOptimizer):
         self.dsp_sols = []
         self.results = []
         self.total_wealth = []
+        self.total_wealth_spy = [] 
+        self.pnl_history_spy = []
 
     def run_backtest(self, start_idx=100, end_idx=None):
         if end_idx is None:
@@ -87,9 +89,23 @@ class DSPBacktester(DSPOptimizer):
             w_new = w_opt[0]
 
             # Update total positions
+            # Method 1: Decay and accumulate weights (original in the paper)
+            #cost = (w_new - (1 - self.decay ) * w_total ) @ self.valid_returns[t]
             # w_total = self.decay * w_total + w_new
-            # w_total = w_new  # <-- replaces, instead of accumulating
-            w_total = w_new / np.sum(np.abs(w_new))
+
+            # Method 2: Normalize weights and accumulate with weight-dependent decay
+            w_new = w_new / np.sum(np.abs(w_new))
+            if i == 0:
+                #print(w_new)
+                w_total = w_new
+            else:
+                m = min(self.decay, 1 - self.decay)
+                M = max(self.decay, 1 - self.decay)
+                decay = np.clip(sum(w_total != 0)/sum(w_new != 0),m,M)  # Adjust decay based on previous weights
+                w_total = decay * w_total + ( 1 - decay ) * w_new
+
+            # Method 3: Simple decay and normalize
+            # w_total = w_new / np.sum(np.abs(w_new))
 
             # Compute return from observed market returns
             R_forward = self.valid_returns[t+1:t+1+self.rebalance_every]
@@ -105,7 +121,14 @@ class DSPBacktester(DSPOptimizer):
             self.pnl_history.append(pnl)
             self.rebalance_dates.append(self.valid_dates[t])
 
-    def performance(self):
+            # Comparison with buy and hold SPY
+            pnl_spy = R_forward[:, 0] # Assuming SPY is the first ticker in self.valid_returns
+            pnl_spy = np.sum(pnl_spy)
+
+            self.pnl_history_spy.append(pnl_spy)
+            self.total_wealth_spy.append(self.total_wealth_spy[-1] * (1 + pnl_spy)) if i > 0 else self.total_wealth_spy.append(100 * (1 + pnl_spy))
+
+    def performance(self, plot=False):
         pnl = np.array(self.pnl_history)
 
         mean_return = np.mean(pnl)
@@ -116,31 +139,70 @@ class DSPBacktester(DSPOptimizer):
         annual_vol = volatility * np.sqrt(annual_factor)
         sharpe_ratio = annual_return / annual_vol if annual_vol > 0 else np.nan
 
-        print(f"Annual Return: {annual_return:.2%}")
-        print(f"Annual Volatility: {annual_vol:.2%}")
+        #print(f"Annual Return: {annual_return:.2%}")
+        #print(f"Annual Volatility: {annual_vol:.2%}")
         print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
 
-        plt.figure(figsize=(10,5))
-        plt.plot(self.rebalance_dates, pnl, label="Period Return")
-        plt.grid(True)
-        plt.title("DSP Strategy Period Return")
-        plt.xlabel("Date")
-        plt.ylabel("Period Return")
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        if plot:
+            plt.figure(figsize=(10,5))
+            plt.plot(self.rebalance_dates, pnl, label="Period Return")
+            plt.grid(True)
+            plt.title("DSP Strategy Period Return")
+            plt.xlabel("Date")
+            plt.ylabel("Period Return")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+            plt.close()
 
-        total_wealth = np.array(self.total_wealth)
-        plt.figure(figsize=(10,5))
-        plt.plot(self.rebalance_dates, total_wealth, label="Total Wealth", color='orange')
-        plt.grid(True)
-        plt.title("DSP Strategy Total Wealth")
-        plt.xlabel("Date")
-        plt.ylabel("Total Wealth")
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+            total_wealth = np.array(self.total_wealth)
+            plt.figure(figsize=(10,5))
+            plt.plot(self.rebalance_dates, total_wealth, label="Total Wealth", color='orange')
+            plt.grid(True)
+            plt.title("DSP Strategy Total Wealth")
+            plt.xlabel("Date")
+            plt.ylabel("Total Wealth")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+            plt.close()
 
+        # SPY performance
+        pnl_spy = np.array(self.pnl_history_spy)
+        mean_return_spy = np.mean(pnl_spy)
+        volatility_spy = np.std(pnl_spy)
+        annual_return_spy = (1 + mean_return_spy) ** annual_factor - 1
+        annual_vol_spy = volatility_spy * np.sqrt(annual_factor)
+        sharpe_ratio_spy = annual_return_spy / annual_vol_spy if annual_vol_spy > 0 else np.nan
+        #print(f"SPY Annual Return: {annual_return_spy:.2%}")
+        #print(f"SPY Annual Volatility: {annual_vol_spy:.2%}")
+        print(f"SPY Sharpe Ratio: {sharpe_ratio_spy:.2f}")
+        
+        if plot:
+            plt.figure(figsize=(10,5))
+            plt.plot(self.rebalance_dates, pnl_spy, label="SPY Period Return", color='green')
+            plt.grid(True)
+            plt.title("SPY Period Return")
+            plt.xlabel("Date")
+            plt.ylabel("Period Return")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+            plt.close()
+
+            total_wealth_spy = np.array(self.total_wealth_spy)
+            plt.figure(figsize=(10,5))
+            plt.plot(self.rebalance_dates, total_wealth_spy, label="SPY Total Wealth", color='red')
+            plt.grid(True)
+            plt.title("SPY Total Wealth")
+            plt.xlabel("Date")
+            plt.ylabel("Total Wealth")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+            plt.close()
+        
+        return (sharpe_ratio, sharpe_ratio_spy)
 
     def get_weights_df(self):
         import pandas as pd

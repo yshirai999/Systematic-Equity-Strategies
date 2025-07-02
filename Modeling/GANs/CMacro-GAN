@@ -1,24 +1,24 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.utils import spectral_norm
 
 # ------------------------
-# Utility: Self-Attention Block
+# Utility: Self-Attention Block with Causality Mask
 # ------------------------
 class SelfAttention(nn.Module):
-    def __init__(self, in_dim):
-        super(SelfAttention, self).__init__()
-        self.query = nn.Linear(in_dim, in_dim)
-        self.key = nn.Linear(in_dim, in_dim)
-        self.value = nn.Linear(in_dim, in_dim)
-        self.softmax = nn.Softmax(dim=-1)
+    def __init__(self, embed_dim, num_heads):
+        super().__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.attn = nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, batch_first=True)
+        self.norm = nn.LayerNorm(embed_dim)
 
     def forward(self, x):
-        Q = self.query(x)
-        K = self.key(x)
-        V = self.value(x)
-        attn_weights = self.softmax(Q @ K.transpose(-2, -1) / (x.size(-1) ** 0.5))
-        return attn_weights @ V
+        seq_len = x.size(1)
+        mask = torch.triu(torch.ones(seq_len, seq_len, device=x.device), diagonal=1).bool()
+        attn_out, _ = self.attn(x, x, x, attn_mask=mask)
+        return self.norm(x + attn_out)
 
 # ------------------------
 # Encoder for Conditioning Data
@@ -46,34 +46,79 @@ class ConditioningEncoder(nn.Module):
         return self.output_layer(torch.cat([x, m], dim=-1))  # [B, 64]
 
 # ------------------------
-# Generator
+# Generator matching Keras-style architecture
 # ------------------------
 class Generator(nn.Module):
-    def __init__(self, latent_dim, num_assets):
+    def __init__(self, latent_dim, ell):
         super().__init__()
-        self.fc = nn.Linear(latent_dim + 64, 128)
-        self.conv = nn.Sequential(
-            nn.ConvTranspose1d(1, 32, 3),
-            nn.LayerNorm([32, 3]),
-            nn.LeakyReLU(),
-            nn.ConvTranspose1d(32, 1, 3),
-        )
-        self.out_proj = nn.Linear(3, num_assets)
+        self.latent_dim = latent_dim
+        self.ell = ell
 
-    def forward(self, z, cond):
-        x = torch.cat([z, cond], dim=-1)
-        x = self.fc(x).unsqueeze(1)  # [B, 1, 128]
-        x = self.conv(x)             # [B, 1, 3]
-        return self.out_proj(x.squeeze(1))  # [B, num_assets]
+        self.linear = spectral_norm(nn.Linear(latent_dim, ell * 32))
+        self.layernorm1 = nn.LayerNorm(ell * 32)
+        self.relu = nn.ReLU()
+
+        self.resblock1 = nn.ModuleList([
+            nn.ModuleList([
+                spectral_norm(nn.Conv1d(32, 64, kernel_size=3)),
+                nn.LayerNorm(64),
+                nn.ReLU(),
+                spectral_norm(nn.Conv1d(64, 32, kernel_size=1)),
+            ]) for _ in range(3)
+        ])
+
+        self.attn = SelfAttention(embed_dim=32, num_heads=8)
+
+        self.resblock2 = nn.ModuleList([
+            nn.ModuleList([
+                spectral_norm(nn.Conv1d(32, 64, kernel_size=3)),
+                nn.LayerNorm(64),
+                nn.ReLU(),
+                spectral_norm(nn.Conv1d(64, 32, kernel_size=1)),
+            ]) for _ in range(3)
+        ])
+
+        self.final = spectral_norm(nn.Conv1d(32, 1, kernel_size=1))
+
+    def forward(self, z):
+        x = self.linear(z)
+        x = self.layernorm1(x)
+        x = self.relu(x)
+        x = x.view(x.size(0), self.ell, 32).transpose(1, 2)  # [B, 32, ell]
+
+        for block in self.resblock1:
+            residual = x
+            x = F.pad(x, (2, 0))  # causal padding
+            x = block[0](x)
+            x = block[1](x.transpose(1, 2)).transpose(1, 2)
+            x = block[2](x)
+            x = block[3](x)
+            x += residual
+
+        x = x.transpose(1, 2)
+        x = self.attn(x)
+        x = x.transpose(1, 2)
+
+        for block in self.resblock2:
+            residual = x
+            x = F.pad(x, (2, 0))  # causal padding
+            x = block[0](x)
+            x = block[1](x.transpose(1, 2)).transpose(1, 2)
+            x = block[2](x)
+            x = block[3](x)
+            x += residual
+
+        x = self.final(x)
+        return x.squeeze(1)
 
 # ------------------------
 # Discriminator
 # ------------------------
 class Discriminator(nn.Module):
-    def __init__(self, num_assets):
+    def __init__(self, ell):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(num_assets + 64, 128),
+            nn.Linear(ell + 64, 128),
             nn.LeakyReLU(),
             nn.Linear(128, 1),
         )
@@ -86,15 +131,15 @@ class Discriminator(nn.Module):
 # GAN Wrapper
 # ------------------------
 class GAN_BG_Macro(nn.Module):
-    def __init__(self, latent_dim, num_assets, window, num_macro):
+    def __init__(self, latent_dim, ell, window, num_macro):
         super().__init__()
-        self.encoder = ConditioningEncoder(num_assets, window, num_macro)
-        self.generator = Generator(latent_dim, num_assets)
-        self.discriminator = Discriminator(num_assets)
+        self.encoder = ConditioningEncoder(num_assets=ell, window=window, num_macro=num_macro)
+        self.generator = Generator(latent_dim, ell)
+        self.discriminator = Discriminator(ell)
 
     def generate(self, z, past_returns, macro):
         cond = self.encoder(past_returns, macro)
-        return self.generator(z, cond)
+        return self.generator(z)
 
     def discriminate(self, returns, past_returns, macro):
         cond = self.encoder(past_returns, macro)
