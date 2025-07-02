@@ -4,8 +4,8 @@ from scipy.stats import t, gamma
 from Data.DataProcessing import data  # lowercase 'data' class
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-DATA_DIR = os.path.join(ROOT_DIR, "BG_Modeling", "estimates", "FINAL")
-CORR_DIR = os.path.join(ROOT_DIR, "t_Copula_Modeling", "results", "correlation_matrices")
+DATA_DIR = os.path.join(ROOT_DIR, "Modeling", "BG_Modeling", "estimates", "FINAL")
+CORR_DIR = os.path.join(ROOT_DIR, "Modeling", "t_Copula_Modeling", "results", "correlation_matrices")
 
 class JointReturnSimulator:
     def __init__(self,

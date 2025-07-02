@@ -1,8 +1,8 @@
 import sys, os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 CONFIG_DIR = os.path.join(SCRIPT_DIR, "config.yaml")
-PLOT_DIR = os.path.join("BG_Modeling", "estimates", "plots")
+PLOT_DIR = os.path.join(SCRIPT_DIR, "estimates", "plots")
 sys.path.append(PROJECT_ROOT)
 os.makedirs(PLOT_DIR, exist_ok=True)
 

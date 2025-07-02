@@ -20,7 +20,7 @@ print("GPU name: ", torch.cuda.get_device_name(0))  # Optional: Shows GPU name
 
 import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 CHECKPOINT_DIR = os.path.join(SCRIPT_DIR, "estimates", "Checkpoints")
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 

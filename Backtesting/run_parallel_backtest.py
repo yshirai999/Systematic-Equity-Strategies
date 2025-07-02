@@ -55,7 +55,7 @@ def run_parallel_backtest(tickers, lam, J, df, rebalance_every, decay, start_idx
 
 if __name__ == "__main__":
     tickers = ['spy', 'xlb', 'xle', 'xlf', 'xli', 'xlk', 'xlu', 'xlv', 'xly']
-    lam = 0.75
+    lam = 0.5
     J = 10000
     df = 6
     rebalance_every = 10

@@ -1,0 +1,101 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+# ------------------------
+# Utility: Self-Attention Block
+# ------------------------
+class SelfAttention(nn.Module):
+    def __init__(self, in_dim):
+        super(SelfAttention, self).__init__()
+        self.query = nn.Linear(in_dim, in_dim)
+        self.key = nn.Linear(in_dim, in_dim)
+        self.value = nn.Linear(in_dim, in_dim)
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x):
+        Q = self.query(x)
+        K = self.key(x)
+        V = self.value(x)
+        attn_weights = self.softmax(Q @ K.transpose(-2, -1) / (x.size(-1) ** 0.5))
+        return attn_weights @ V
+
+# ------------------------
+# Encoder for Conditioning Data
+# ------------------------
+class ConditioningEncoder(nn.Module):
+    def __init__(self, num_assets, window, num_macro):
+        super().__init__()
+        self.cnn = nn.Sequential(
+            nn.Conv1d(num_assets, 32, kernel_size=5, padding=2),
+            nn.LeakyReLU(),
+            nn.Conv1d(32, 64, kernel_size=3, padding=1),
+            nn.LeakyReLU(),
+            nn.AdaptiveAvgPool1d(1),
+        )
+        self.mlp_macro = nn.Sequential(
+            nn.Linear(num_macro, 32),
+            nn.LayerNorm(32),
+            nn.LeakyReLU(),
+        )
+        self.output_layer = nn.Linear(64 + 32, 64)
+
+    def forward(self, past_returns, macro):
+        x = self.cnn(past_returns).squeeze(-1)  # [B, 64]
+        m = self.mlp_macro(macro)               # [B, 32]
+        return self.output_layer(torch.cat([x, m], dim=-1))  # [B, 64]
+
+# ------------------------
+# Generator
+# ------------------------
+class Generator(nn.Module):
+    def __init__(self, latent_dim, num_assets):
+        super().__init__()
+        self.fc = nn.Linear(latent_dim + 64, 128)
+        self.conv = nn.Sequential(
+            nn.ConvTranspose1d(1, 32, 3),
+            nn.LayerNorm([32, 3]),
+            nn.LeakyReLU(),
+            nn.ConvTranspose1d(32, 1, 3),
+        )
+        self.out_proj = nn.Linear(3, num_assets)
+
+    def forward(self, z, cond):
+        x = torch.cat([z, cond], dim=-1)
+        x = self.fc(x).unsqueeze(1)  # [B, 1, 128]
+        x = self.conv(x)             # [B, 1, 3]
+        return self.out_proj(x.squeeze(1))  # [B, num_assets]
+
+# ------------------------
+# Discriminator
+# ------------------------
+class Discriminator(nn.Module):
+    def __init__(self, num_assets):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(num_assets + 64, 128),
+            nn.LeakyReLU(),
+            nn.Linear(128, 1),
+        )
+
+    def forward(self, returns, cond):
+        x = torch.cat([returns, cond], dim=-1)
+        return self.net(x)
+
+# ------------------------
+# GAN Wrapper
+# ------------------------
+class GAN_BG_Macro(nn.Module):
+    def __init__(self, latent_dim, num_assets, window, num_macro):
+        super().__init__()
+        self.encoder = ConditioningEncoder(num_assets, window, num_macro)
+        self.generator = Generator(latent_dim, num_assets)
+        self.discriminator = Discriminator(num_assets)
+
+    def generate(self, z, past_returns, macro):
+        cond = self.encoder(past_returns, macro)
+        return self.generator(z, cond)
+
+    def discriminate(self, returns, past_returns, macro):
+        cond = self.encoder(past_returns, macro)
+        return self.discriminator(returns, cond)

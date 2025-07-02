@@ -1,6 +1,6 @@
 import sys, os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 sys.path.append(PROJECT_ROOT)
 
 import numpy as np
@@ -11,16 +11,16 @@ from tqdm import tqdm
 import time
 from scipy.linalg import logm
 
-from BG_Modeling.Models import BG 
-from t_Copula_Modeling.utils import ArchakovHansen, estimate_copula_corr_kendall
+from Modeling.BG_Modeling.Models import BG 
+from Modeling.t_Copula_Modeling.utils import ArchakovHansen, estimate_copula_corr_kendall
 
 
 # === Settings ===
 tickers = ["spy", "xlb", "xle", "xlf", "xli", "xlk", "xlu", "xlv", "xly"]
 nu = 6  # degrees of freedom for t-copula
 window = 252  # rolling window size in days
-save_path = os.path.abspath(os.path.join(PROJECT_ROOT,"t_Copula_Modeling","results","correlation_matrices"))
-theta_path = os.path.abspath(os.path.join(PROJECT_ROOT, "BG_Modeling", "estimates", "FINAL", "theta_{}_FINAL.npy"))
+save_path = os.path.abspath(os.path.join(PROJECT_ROOT,"Modeling","t_Copula_Modeling","results","correlation_matrices"))
+theta_path = os.path.abspath(os.path.join(PROJECT_ROOT, "Modeling", "BG_Modeling", "estimates", "FINAL", "theta_{}_FINAL.npy"))
 os.makedirs(save_path, exist_ok=True)
 
 # === Create a BG instance per ticker ===

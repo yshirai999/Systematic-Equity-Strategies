@@ -2,7 +2,7 @@ import sys, os
 sys.path.append(os.path.abspath('.'))
 SAVE_DIR = os.path.join(os.path.dirname(__file__), 'Results')
 os.makedirs(SAVE_DIR, exist_ok=True)
-SAVE_PATH = os.path.join(SAVE_DIR, "backtest_results.npy")
+SAVE_PATH = os.path.join(SAVE_DIR, "backtest_results_0_4330_75.npy")
 
 
 import numpy as np

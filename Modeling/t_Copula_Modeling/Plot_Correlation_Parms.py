@@ -1,6 +1,6 @@
 import sys, os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 sys.path.append(PROJECT_ROOT)
 
 import numpy as np
@@ -10,8 +10,8 @@ from itertools import permutations
 
 from Data.DataProcessing import data
 
-SAVE_PATH = os.path.join(PROJECT_ROOT, "t_Copula_Modeling", "results", "correlation_matrices")
-PLOT_DIR = os.path.join(PROJECT_ROOT, "t_Copula_Modeling", "results", "plots")
+SAVE_PATH = os.path.join(PROJECT_ROOT, "Modeling", "t_Copula_Modeling", "results", "correlation_matrices")
+PLOT_DIR = os.path.join(PROJECT_ROOT, "Modeling", "t_Copula_Modeling", "results", "plots")
 os.makedirs(PLOT_DIR, exist_ok=True)
 
 # Load days and returns data
