@@ -2,6 +2,20 @@
 
 This folder contains the core optimization logic used for allocating portfolio weights based on distorted return scenarios. It includes tools for simulating returns under a joint distribution model and solving a max-min optimization problem designed to capture worst-case performance scenarios.
 
+## Directory Structure
+
+```bash
+Optimizers/
+│
+├── readme.md                     # This file - optimization overview
+└── DSP/                          # Dynamic Saddle Programming implementation
+    ├── dsp_solver.py             # DSPOptimizer class for max-min optimization
+    ├── simulate_joint.py         # JointReturnDistribution class for return simulation
+    ├── constraints_utils.py      # Utility functions for optimization constraints
+    ├── Tests.ipynb               # Testing and validation notebook
+    └── __pycache__/              # Python cache files
+```
+
 ## Contents
 
 - **`simulate_joint.py`**  
