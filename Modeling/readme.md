@@ -111,11 +111,9 @@ To account for the cross-sectional dependence between sector ETFs, we implemente
 Steps Taken:
 Marginal Fit: For each ETF, we used the GPU-accelerated BG model to estimate marginal distributions across a rolling 100-day window.
 
-Probability Integral Transform (PIT): Transformed marginal returns into uniform variables via the BG-fitted CDFs.
+Estimate Kendall-tau matrix for the ETFs vector on each day
 
-t-Inverse Transformation: Converted the uniform samples to pseudo-observations using the inverse t CDF (with 6 degrees of freedom).
-
-Time-Varying Correlation Estimation: Applied the Archakov–Hansen exponential mapping to ensure each day’s correlation matrix is symmetric and positive semidefinite.
+Transform the Kendall-tau to the correlation matrix of the t_Copula based on the formula rho = 2 arcsin(omega)/pi
 
 Validation: Verified that the estimated matrices were positive semidefinite across all 4,330 days in the dataset.
 
