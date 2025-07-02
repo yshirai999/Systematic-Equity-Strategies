@@ -29,7 +29,7 @@ for k in k0:
     try:
         results = np.load(SAVE_PATH, allow_pickle=True)
         bt.store_backtest_results(results, start_idx=start_idx, end_idx=end_idx)
-        print("Performance of backtest results over period ", start_idx // 252 + 2007, " to ", end_idx // 252 + 2007)
+        print(f"Performance of backtest results over period {start_idx // 252 + 2007} to {end_idx // 252 + 2007}")
         sharpe_ratio = bt.performance()
         sharpe_ratios.append(sharpe_ratio)
     except:
@@ -46,5 +46,6 @@ plt.ylabel("Sharpe Ratio")
 plt.legend(['DSP Portfolio','SPY'])
 plt.tight_layout()
 plt.show()
+plt.savefig(os.path.join(SAVE_DIR, "rolling_sharpe_ratio_comparison.png"))
 plt.close()
 
