@@ -45,7 +45,7 @@ plt.xlabel(f"End of {n_days//252}-Year Period")
 plt.ylabel("Sharpe Ratio")
 plt.legend(['DSP Portfolio','SPY'])
 plt.tight_layout()
-plt.show()
 plt.savefig(os.path.join(SAVE_DIR, "rolling_sharpe_ratio_comparison.png"))
+plt.show()
 plt.close()
 
