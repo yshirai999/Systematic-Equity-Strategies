@@ -80,4 +80,4 @@ conda activate mbg-env
 
 Planned extensions include:
 
-Implement Generative Adversarial Networks conditional on macro factors to improve the estimate of the joint distribution of return and to capture volatility clustering phenomena
+Improve upon the joint return distribution using Generative AI and including macro factors to capture evolving regime switched and volatility clustering phenomena

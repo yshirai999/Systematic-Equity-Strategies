@@ -49,10 +49,11 @@ class ConditioningEncoder(nn.Module):
 # Generator matching Keras-style architecture
 # ------------------------
 class Generator(nn.Module):
-    def __init__(self, latent_dim, ell):
+    def __init__(self, latent_dim, ell, kernel_size=3):
         super().__init__()
         self.latent_dim = latent_dim
         self.ell = ell
+        self.kernel_size = kernel_size
 
         self.linear = spectral_norm(nn.Linear(latent_dim, ell * 32))
         self.layernorm1 = nn.LayerNorm(ell * 32)
@@ -60,7 +61,7 @@ class Generator(nn.Module):
 
         self.resblock1 = nn.ModuleList([
             nn.ModuleList([
-                spectral_norm(nn.Conv1d(32, 64, kernel_size=3)),
+                spectral_norm(nn.Conv1d(32, 64, kernel_size=kernel_size)),
                 nn.LayerNorm(64),
                 nn.ReLU(),
                 spectral_norm(nn.Conv1d(64, 32, kernel_size=1)),
@@ -71,7 +72,7 @@ class Generator(nn.Module):
 
         self.resblock2 = nn.ModuleList([
             nn.ModuleList([
-                spectral_norm(nn.Conv1d(32, 64, kernel_size=3)),
+                spectral_norm(nn.Conv1d(32, 64, kernel_size=kernel_size)),
                 nn.LayerNorm(64),
                 nn.ReLU(),
                 spectral_norm(nn.Conv1d(64, 32, kernel_size=1)),
@@ -88,7 +89,7 @@ class Generator(nn.Module):
 
         for block in self.resblock1:
             residual = x
-            x = F.pad(x, (2, 0))  # causal padding
+            x = F.pad(x, (self.kernel_size - 1, 0))  # causal padding
             x = block[0](x)
             x = block[1](x.transpose(1, 2)).transpose(1, 2)
             x = block[2](x)
@@ -101,7 +102,7 @@ class Generator(nn.Module):
 
         for block in self.resblock2:
             residual = x
-            x = F.pad(x, (2, 0))  # causal padding
+            x = F.pad(x, (self.kernel_size - 1, 0))  # causal padding
             x = block[0](x)
             x = block[1](x.transpose(1, 2)).transpose(1, 2)
             x = block[2](x)
@@ -112,20 +113,36 @@ class Generator(nn.Module):
         return x.squeeze(1)
 
 # ------------------------
-# Discriminator
+# Discriminator (Conv + SpectralNorm style)
 # ------------------------
 class Discriminator(nn.Module):
     def __init__(self, ell):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(ell + 64, 128),
-            nn.LeakyReLU(),
-            nn.Linear(128, 1),
-        )
+        self.conv1 = spectral_norm(nn.Conv1d(1, 64, kernel_size=3, padding=1))
+        self.norm1 = nn.LayerNorm(ell)
+        self.act1 = nn.LeakyReLU(0.2)
+        self.drop1 = nn.Dropout(0.3)
+
+        self.conv2 = spectral_norm(nn.Conv1d(64, 128, kernel_size=3, padding=1))
+        self.norm2 = nn.LayerNorm(ell)
+        self.act2 = nn.LeakyReLU(0.2)
+
+        self.pool = nn.AdaptiveAvgPool1d(1)
+        self.out = spectral_norm(nn.Linear(128, 1))
 
     def forward(self, returns, cond):
-        x = torch.cat([returns, cond], dim=-1)
-        return self.net(x)
+        x = returns.unsqueeze(1)  # [B, 1, ell]
+        x = self.conv1(x)
+        x = self.norm1(x)
+        x = self.act1(x)
+        x = self.drop1(x)
+
+        x = self.conv2(x)
+        x = self.norm2(x)
+        x = self.act2(x)
+
+        x = self.pool(x).squeeze(-1)  # [B, 128]
+        return self.out(x)
 
 # ------------------------
 # GAN Wrapper
