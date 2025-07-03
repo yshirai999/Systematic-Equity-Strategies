@@ -22,15 +22,15 @@ Optimizers/
   Contains the `JointReturnDistribution` class, responsible for simulating multivariate return vectors using a fitted joint distribution (e.g., t-Copula, Multivariate Bilateral Gamma, GAN-based conditional samplers, etc.).
 
 - **`dsp_solver.py`**  
-  Contains the `DSPOptimizer` Inherits from `JointReturnDistribution` and implements the core DSP (Distributionally Skewed Portfolio) allocation method. It:
+  Contains the `DSPOptimizer` Inherits from `JointReturnDistribution` and implements the core DSP (Disciplined Saddle Programming) solver. It:
 
   1. **Builds a max-min optimization problem**:
      - The goal is to compute portfolio weights that maximize the worst-case expected return.
-     - The worst-case distribution is derived by distorting the empirical distribution of simulated returns. The degree and type of distortion are configurable (e.g., monotonic shift, quantile adjustments).
+     - The worst-case distribution is derived by distorting the empirical distribution of simulated returns. The degree and type of distortion are configurable (e.g., minmaxvar).
 
   2. **Solves the optimization**:
-     - Uses numerical solvers (e.g., `scipy.optimize`) to compute optimal portfolio weights.
-     - Enforces constraints such as budget (`\sum w = 1`) and optionally bounds (e.g., long-only, leverage limits).
+     - Uses numerical solvers based on the cvxpy library to compute optimal portfolio weights.
+     - Enforces constraints that ensure lower weights are given to extreme scenarios
 
 ## Usage
 
