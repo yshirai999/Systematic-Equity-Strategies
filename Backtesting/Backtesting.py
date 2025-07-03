@@ -148,12 +148,12 @@ class DSPBacktester(DSPOptimizer):
         
         #print(f"Annual Return: {annual_return:.2%}")
         #print(f"Annual Volatility: {annual_vol:.2%}")
-        print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
+        # print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
         mdd, cvar, sortino = self.compute_risk_metrics(pnl, label="DSP")
 
         #print(f"SPY Annual Return: {annual_return_spy:.2%}")
         #print(f"SPY Annual Volatility: {annual_vol_spy:.2%}")
-        print(f"SPY Sharpe Ratio: {sharpe_ratio_spy:.2f}")
+        # print(f"SPY Sharpe Ratio: {sharpe_ratio_spy:.2f}")
         mdd_spy, cvar_spy, sortino_spy = self.compute_risk_metrics(pnl_spy, label="SPY")
 
         if plot:
@@ -179,6 +179,7 @@ class DSPBacktester(DSPOptimizer):
             plt.tight_layout()
             plt.show()
             plt.close()
+
             # Plot SPY performance
             plt.figure(figsize=(10,5))
             plt.plot(self.rebalance_dates, pnl_spy, label="SPY Period Return", color='green')
@@ -220,31 +221,59 @@ class DSPBacktester(DSPOptimizer):
         sharpe = ann_return / ann_vol if ann_vol > 0 else np.nan
         return {"Annual Return": ann_return, "Annual Volatility": ann_vol, "Sharpe Ratio": sharpe}
 
+    # def compute_risk_metrics(self, pnl_array, label=""):
+
+    #     def max_drawdown(pnl):
+    #         wealth = np.cumprod(1 + pnl)
+    #         peak = np.maximum.accumulate(wealth)
+    #         dd = (wealth - peak) / peak
+    #         return dd.min()
+
+    #     def cvar(pnl, alpha=0.05):
+    #         losses = np.sort(pnl[pnl < 0])
+    #         n = int(np.ceil(alpha * len(losses)))
+    #         return losses[:n].mean() if n > 0 else 0.0
+
+    #     def sortino(pnl, target=0):
+    #         downside = pnl[pnl < target]
+    #         downside_dev = np.sqrt(np.mean((downside - target) ** 2))
+    #         return (np.mean(pnl) - target) / downside_dev if downside_dev > 0 else np.nan
+
+    #     mdd = max_drawdown(pnl_array)
+    #     cvar_val = cvar(pnl_array)
+    #     sortino_val = sortino(pnl_array)
+
+    #     print(f"{label} Max Drawdown: {mdd:.2%}")
+    #     print(f"{label} CVaR (5%): {cvar_val:.2%}")
+    #     print(f"{label} Sortino Ratio: {sortino_val:.3f}")
+
+    #     return mdd, cvar_val, sortino_val
+    
     def compute_risk_metrics(self, pnl_array, label=""):
 
-        def max_drawdown(pnl):
-            wealth = np.cumprod(1 + pnl)
-            peak = np.maximum.accumulate(wealth)
-            dd = (wealth - peak) / peak
-            return dd.min()
+        print(f"Min {label} PnL:", pnl_array.min())
+        rebalance_every = self.rebalance_every
+        annual_factor = 252 / rebalance_every
 
-        def cvar(pnl, alpha=0.05):
-            losses = np.sort(pnl[pnl < 0])
-            n = int(np.ceil(alpha * len(losses)))
-            return losses[:n].mean() if n > 0 else 0.0
+        wealth = np.cumprod(1 + pnl_array)
+        peak = np.maximum.accumulate(wealth)
+        dd = (wealth - peak) / peak
+        mdd = dd.min()
 
-        def sortino(pnl, target=0):
-            downside = pnl[pnl < target]
-            downside_dev = np.sqrt(np.mean((downside - target) ** 2))
-            return (np.mean(pnl) - target) / downside_dev if downside_dev > 0 else np.nan
+        losses = np.sort(pnl_array[pnl_array < 0])
+        n = int(np.ceil(0.05 * len(losses)))
+        cvar_val = losses[:n].mean() if n > 0 else 0.0
+        cvar_annual = (1 + cvar_val) ** annual_factor - 1
 
-        mdd = max_drawdown(pnl_array)
-        cvar_val = cvar(pnl_array)
-        sortino_val = sortino(pnl_array)
+        downside = pnl_array[pnl_array < 0]
+        downside_dev = np.sqrt(np.mean((downside) ** 2))
+        sortino_period = np.mean(pnl_array) / downside_dev if downside_dev > 0 else np.nan
+        sortino_annual = sortino_period * np.sqrt(annual_factor)
 
-        print(f"{label} Max Drawdown: {mdd:.2%}")
-        print(f"{label} CVaR (5%): {cvar_val:.2%}")
-        print(f"{label} Sortino Ratio: {sortino_val:.3f}")
+        # print(f"{label} Max Drawdown: {mdd:.2%}")
+        # print(f"{label} Annualized CVaR (5%): {cvar_annual:.2%}")
+        # print(f"{label} Annualized Sortino: {sortino_annual:.3f}")
 
-        return mdd, cvar_val, sortino_val
+        return mdd, cvar_annual, sortino_annual
+
 
