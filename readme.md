@@ -2,6 +2,16 @@
 
 This repo implements a t-copula with Bilateral Gamma (BG) marginals for joint ETFs return distribution, with a focus on robust, systematic signal extraction.
 
+## About the Author
+
+**Yoshihiro Shirai** is a Pearson Fellow at the University of Washington with expertise in applied mathematics, machine learning, and economics.
+
+- 🔗 [LinkedIn](https://www.linkedin.com/in/yoshihiro-shirai/)
+- 📖 [Google Scholar](https://scholar.google.com/citations?user=...)
+- 💻 [GitHub](https://github.com/yshirai999)
+- 🌐 [Personal Website](https://www.yoshihiroshirai.com)
+
+
 ## Project Structure
 
 ```bash
