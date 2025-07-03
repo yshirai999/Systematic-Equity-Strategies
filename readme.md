@@ -63,17 +63,19 @@ A systematic strategy is then implemented by rebalancing the portfolio weights e
 
 ## Results
 
-While there is no conclusive evidence that the DSP portfolio outperforms a buy-and-hold strategy on SPY in terms of total return or Sharpe ratio, the strategy shows a consistent advantage in risk-adjusted metrics that emphasize downside protection and tail risk control.
+The DSP strategy shows a consistent advantage in risk-adjusted metrics that emphasize downside protection and tail risk control.
 
 In particular:
 
-Rolling Sortino Ratios indicate that the DSP portfolio systematically outperforms SPY in terms of downside risk-adjusted return, especially during volatile or crisis periods.
+- **Rolling Sortino Ratios** indicate that the DSP portfolio systematically outperforms SPY in terms of downside risk-adjusted return, especially during volatile or crisis periods.
 
-Rolling 3-Year CVaR (5%) plots show that DSP consistently achieves smaller average tail losses, confirming its design as a worst-case-aware optimizer.
+- **Rolling 3-Year CVaR (5%)** plots show that DSP consistently achieves smaller average tail losses, confirming its design as a worst-case-aware optimizer.
 
-Rolling Max Drawdown reveals that DSP reduces portfolio losses in drawdown-heavy regimes (e.g., 2020–2022), even when total return is modest.
+- **Rolling Max Drawdown** reveals that DSP reduces portfolio losses in drawdown-heavy regimes (e.g., 2020–2022), even when total return is modest.
 
-These findings suggest that DSP’s primary edge lies not in maximizing return, but in deliberately constraining risk — offering an effective hedge-like structure for systematic strategies operating under uncertainty.
+- **Rolling 3-Year Sharpe Ratios** show that SPY tends to dominate during bull markets (e.g., 2013–2016), but DSP often remains competitive and resilient.
+
+These findings suggest that DSP’s primary edge lies in deliberately constraining risk — offering an effective hedge-like structure for systematic strategies operating under uncertainty — while closely trailing, and occasionally outperforming, SPY in terms of Sharpe ratio.
 
 ![Rolling Sortino Ratio Comparison](Backtesting/Results/rolling_sortino_ratio_comparison.png)
 
