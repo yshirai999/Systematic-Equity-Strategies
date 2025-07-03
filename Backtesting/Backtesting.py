@@ -130,18 +130,31 @@ class DSPBacktester(DSPOptimizer):
 
     def performance(self, plot=False):
         pnl = np.array(self.pnl_history)
-
+        pnl_spy = np.array(self.pnl_history_spy)
+    
         mean_return = np.mean(pnl)
         volatility = np.std(pnl)
+        mean_return_spy = np.mean(pnl_spy)
+        volatility_spy = np.std(pnl_spy)
 
         annual_factor = 252 // self.rebalance_every  # Assuming daily data, rebalance every k days
         annual_return = (1 + mean_return) ** annual_factor - 1
         annual_vol = volatility * np.sqrt(annual_factor)
         sharpe_ratio = annual_return / annual_vol if annual_vol > 0 else np.nan
 
+        annual_return_spy = (1 + mean_return_spy) ** annual_factor - 1
+        annual_vol_spy = volatility_spy * np.sqrt(annual_factor)
+        sharpe_ratio_spy = annual_return_spy / annual_vol_spy if annual_vol_spy > 0 else np.nan
+        
         #print(f"Annual Return: {annual_return:.2%}")
         #print(f"Annual Volatility: {annual_vol:.2%}")
         print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
+        mdd, cvar, sortino = self.compute_risk_metrics(pnl, label="DSP")
+
+        #print(f"SPY Annual Return: {annual_return_spy:.2%}")
+        #print(f"SPY Annual Volatility: {annual_vol_spy:.2%}")
+        print(f"SPY Sharpe Ratio: {sharpe_ratio_spy:.2f}")
+        mdd_spy, cvar_spy, sortino_spy = self.compute_risk_metrics(pnl_spy, label="SPY")
 
         if plot:
             plt.figure(figsize=(10,5))
@@ -166,19 +179,7 @@ class DSPBacktester(DSPOptimizer):
             plt.tight_layout()
             plt.show()
             plt.close()
-
-        # SPY performance
-        pnl_spy = np.array(self.pnl_history_spy)
-        mean_return_spy = np.mean(pnl_spy)
-        volatility_spy = np.std(pnl_spy)
-        annual_return_spy = (1 + mean_return_spy) ** annual_factor - 1
-        annual_vol_spy = volatility_spy * np.sqrt(annual_factor)
-        sharpe_ratio_spy = annual_return_spy / annual_vol_spy if annual_vol_spy > 0 else np.nan
-        #print(f"SPY Annual Return: {annual_return_spy:.2%}")
-        #print(f"SPY Annual Volatility: {annual_vol_spy:.2%}")
-        print(f"SPY Sharpe Ratio: {sharpe_ratio_spy:.2f}")
-        
-        if plot:
+            # Plot SPY performance
             plt.figure(figsize=(10,5))
             plt.plot(self.rebalance_dates, pnl_spy, label="SPY Period Return", color='green')
             plt.grid(True)
@@ -201,8 +202,8 @@ class DSPBacktester(DSPOptimizer):
             plt.tight_layout()
             plt.show()
             plt.close()
-        
-        return (sharpe_ratio, sharpe_ratio_spy)
+
+        return [(sharpe_ratio, sharpe_ratio_spy), (mdd, mdd_spy), (cvar, cvar_spy), (sortino, sortino_spy)]
 
     def get_weights_df(self):
         import pandas as pd
@@ -219,4 +220,31 @@ class DSPBacktester(DSPOptimizer):
         sharpe = ann_return / ann_vol if ann_vol > 0 else np.nan
         return {"Annual Return": ann_return, "Annual Volatility": ann_vol, "Sharpe Ratio": sharpe}
 
+    def compute_risk_metrics(self, pnl_array, label=""):
+
+        def max_drawdown(pnl):
+            wealth = np.cumprod(1 + pnl)
+            peak = np.maximum.accumulate(wealth)
+            dd = (wealth - peak) / peak
+            return dd.min()
+
+        def cvar(pnl, alpha=0.05):
+            losses = np.sort(pnl[pnl < 0])
+            n = int(np.ceil(alpha * len(losses)))
+            return losses[:n].mean() if n > 0 else 0.0
+
+        def sortino(pnl, target=0):
+            downside = pnl[pnl < target]
+            downside_dev = np.sqrt(np.mean((downside - target) ** 2))
+            return (np.mean(pnl) - target) / downside_dev if downside_dev > 0 else np.nan
+
+        mdd = max_drawdown(pnl_array)
+        cvar_val = cvar(pnl_array)
+        sortino_val = sortino(pnl_array)
+
+        print(f"{label} Max Drawdown: {mdd:.2%}")
+        print(f"{label} CVaR (5%): {cvar_val:.2%}")
+        print(f"{label} Sortino Ratio: {sortino_val:.3f}")
+
+        return mdd, cvar_val, sortino_val
 

@@ -63,9 +63,23 @@ A systematic strategy is then implemented by rebalancing the portfolio weights e
 
 ## Results
 
-So far, no conclusive evidence that a buy and hold strategy for the portfolio so constructed provides superior performance with respect to a buy and hold strategy on SPY.
+While there is no conclusive evidence that the DSP portfolio outperforms a buy-and-hold strategy on SPY in terms of total return or Sharpe ratio, the strategy shows a consistent advantage in risk-adjusted metrics that emphasize downside protection and tail risk control.
 
-However, while performance is not yet consistently superior to SPY, DSP demonstrates periods of comparable Sharpe ratios, suggesting potential in incorporating tail-aware risk modeling in systematic equity investing.
+In particular:
+
+Rolling Sortino Ratios indicate that the DSP portfolio systematically outperforms SPY in terms of downside risk-adjusted return, especially during volatile or crisis periods.
+
+Rolling 3-Year CVaR (5%) plots show that DSP consistently achieves smaller average tail losses, confirming its design as a worst-case-aware optimizer.
+
+Rolling Max Drawdown reveals that DSP reduces portfolio losses in drawdown-heavy regimes (e.g., 2020–2022), even when total return is modest.
+
+These findings suggest that DSP’s primary edge lies not in maximizing return, but in deliberately constraining risk — offering an effective hedge-like structure for systematic strategies operating under uncertainty.
+
+![Rolling Sortino Ratio Comparison](Backtesting/Results/rolling_sortino_ratio_comparison.png)
+
+![Rolling CVaR Comparison](Backtesting/Results/rolling_cvar_comparison.png)
+
+![Rolling Max Drawdown Comparison](Backtesting/Results/rolling_max_drawdown_comparison.png)
 
 ![Rolling Sharpe Ratio Comparison](Backtesting/Results/rolling_sharpe_ratio_comparison.png)
 

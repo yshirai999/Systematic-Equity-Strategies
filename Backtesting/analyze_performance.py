@@ -19,6 +19,9 @@ n_days = 3*252  # 5 years of trading days (252 days/year * 5 years)
 k0 = range(0, 4330-n_days, 252)
 k1 = range(252, 4330, 252)
 sharpe_ratios = []
+sortino = []
+CVaR = []
+MaxDrawdown = []
 
 for k in k0:
     start_idx = k
@@ -30,8 +33,11 @@ for k in k0:
         results = np.load(SAVE_PATH, allow_pickle=True)
         bt.store_backtest_results(results, start_idx=start_idx, end_idx=end_idx)
         print(f"Performance of backtest results over period {start_idx // 252 + 2007} to {end_idx // 252 + 2007}")
-        sharpe_ratio = bt.performance()
-        sharpe_ratios.append(sharpe_ratio)
+        metrics = bt.performance()
+        sharpe_ratios.append(metrics[0])
+        sortino.append(metrics[1])
+        CVaR.append(metrics[2])
+        MaxDrawdown.append(metrics[3])
     except:
         print("Data not found, first run 'run_parallel_backtest.py' file")
         #bt.run_backtest(start_idx=start_idx, end_idx=end_idx)
@@ -49,3 +55,38 @@ plt.savefig(os.path.join(SAVE_DIR, "rolling_sharpe_ratio_comparison.png"))
 plt.show()
 plt.close()
 
+plt.figure(figsize=(10,5))
+plt.plot(years, sortino, label="Sortino")
+plt.grid(True)
+plt.title(f"Rolling {n_days//252}-Year Sortino Ratio Over Time")
+plt.xlabel(f"End of {n_days//252}-Year Period")
+plt.ylabel("Sortino Ratio")
+plt.legend(['DSP Portfolio','SPY'])
+plt.tight_layout()
+plt.savefig(os.path.join(SAVE_DIR, "rolling_sortino_ratio_comparison.png"))
+plt.show()
+plt.close()
+
+plt.figure(figsize=(10,5))
+plt.plot(years, CVaR, label="CVaR")
+plt.grid(True)
+plt.title(f"Rolling {n_days//252}-Year CVaR Over Time")
+plt.xlabel(f"End of {n_days//252}-Year Period")
+plt.ylabel("CVaR")
+plt.legend(['DSP Portfolio','SPY'])
+plt.tight_layout()
+plt.savefig(os.path.join(SAVE_DIR, "rolling_cvar_comparison.png"))
+plt.show()
+plt.close()
+
+plt.figure(figsize=(10,5))
+plt.plot(years, MaxDrawdown, label="Max Drawdown")
+plt.grid(True)
+plt.title(f"Rolling {n_days//252}-Year Max Drawdown Over Time")
+plt.xlabel(f"End of {n_days//252}-Year Period")
+plt.ylabel("Max Drawdown")
+plt.legend(['DSP Portfolio','SPY'])
+plt.tight_layout()
+plt.savefig(os.path.join(SAVE_DIR, "rolling_max_drawdown_comparison.png"))
+plt.show()
+plt.close()
