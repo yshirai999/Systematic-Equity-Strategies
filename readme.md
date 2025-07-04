@@ -10,7 +10,9 @@ https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5195015
 
 https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5195011
 
-A non-technical summary of this repo is also available at: https://medium.com/@yoshihiroshirai/a-robust-systematic-equity-strategies-d26ea229bde0
+A non-technical summary of this repo is also available at:
+
+https://medium.com/@yoshihiroshirai/a-robust-systematic-equity-strategies-d26ea229bde0
 
 ## About the Author
 
