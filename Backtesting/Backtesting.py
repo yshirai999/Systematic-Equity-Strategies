@@ -274,6 +274,6 @@ class DSPBacktester(DSPOptimizer):
         # print(f"{label} Annualized CVaR (5%): {cvar_annual:.2%}")
         # print(f"{label} Annualized Sortino: {sortino_annual:.3f}")
 
-        return mdd, cvar_annual, sortino_annual
+        return mdd, cvar_val, sortino_annual
 
 
