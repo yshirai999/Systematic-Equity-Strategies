@@ -107,7 +107,7 @@ These results show a slight, but substantial improvement with respect to Mean-CV
 
 ![Rolling CVaR Comparison](Backtesting/Results/MCVAR/rolling_cvar_comparison.png)
 
-![Rolling Max Drawdown Comparison](Backtesting/MCVAR/Results/rolling_max_drawdown_comparison.png)
+![Rolling Max Drawdown Comparison](Backtesting/Results/MCVAR/rolling_max_drawdown_comparison.png)
 
 ![Rolling Sharpe Ratio Comparison](Backtesting/Results/MCVAR/rolling_sharpe_ratio_comparison.png)
 
