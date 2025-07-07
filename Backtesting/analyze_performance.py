@@ -14,7 +14,7 @@ from Backtesting import DSPBacktester, MeanCVaRBacktester, Backtester
 import matplotlib.pyplot as plt
 
 # Set parameters
-Backtester_class = "DSP"  # or "DSP"
+Backtester_class = "MCVAR"  # or "DSP"
 tickers = ['spy', 'xlb', 'xle', 'xlf', 'xli', 'xlk', 'xlu', 'xlv', 'xly']
 J = 10000
 df = 6
