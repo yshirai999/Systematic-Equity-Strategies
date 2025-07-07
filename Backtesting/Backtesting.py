@@ -87,6 +87,12 @@ class Backtester:
             self.total_wealth_spy.append(self.total_wealth_spy[-1] * (1 + pnl_spy)) if i > 0 else self.total_wealth_spy.append(100 * (1 + pnl_spy))
 
     def performance(self, plot=False):
+        
+        if isinstance(self.optimizer, DSPOptimizer):
+            label = "DSP"
+        else:
+            label = "Mean-CVaR"
+
         pnl = np.array(self.pnl_history)
         pnl_spy = np.array(self.pnl_history_spy)
     
@@ -107,7 +113,7 @@ class Backtester:
         #print(f"Annual Return: {annual_return:.2%}")
         #print(f"Annual Volatility: {annual_vol:.2%}")
         # print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
-        mdd, cvar, sortino = self.compute_risk_metrics(pnl, label="DSP")
+        mdd, cvar, sortino = self.compute_risk_metrics(pnl, label=label)
 
         #print(f"SPY Annual Return: {annual_return_spy:.2%}")
         #print(f"SPY Annual Volatility: {annual_vol_spy:.2%}")

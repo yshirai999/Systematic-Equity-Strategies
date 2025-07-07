@@ -23,6 +23,14 @@ decay = 0.5
 n_days = 3*252  # 5 years of trading days (252 days/year * 5 years)
 k0 = range(0, 4330-n_days, 252)
 k1 = range(252, 4330, 252)
+sharpe_ratios_DSP = []
+sortino_DSP = []
+CVaR_DSP = []
+MaxDrawdown_DSP = []
+sharpe_ratios_MCVAR = []
+sortino_MCVAR = []
+CVaR_MCVAR = []
+MaxDrawdown_MCVAR = []
 sharpe_ratios = []
 sortino = []
 CVaR = []
@@ -33,73 +41,109 @@ for k in k0:
     end_idx = k + n_days  # n_days days for Sharpe ratio comparison
 
     # Initialize and load or run
-    if Backtester_class == "DSP":
-        bt = DSPBacktester(tickers=tickers, J=J, df=df,
+    btDSP = DSPBacktester(tickers=tickers, J=J, df=df,
+                            rebalance_every=rebalance_every, decay=decay)
 
+    btMCVAR = MeanCVaRBacktester(tickers=tickers, J=J, df=df,
                                 rebalance_every=rebalance_every, decay=decay)
-        SAVE_PATH = SAVE_PATH_DSP
-        SAVE_DIR = SAVE_DIR_DSP
-    else:
-        bt = MeanCVaRBacktester(tickers=tickers, J=J, df=df,
-                                 rebalance_every=rebalance_every, decay=decay)
-        SAVE_PATH = SAVE_PATH_MCVAR
-        SAVE_DIR = SAVE_DIR_MCVAR
 
-    bt = Backtester(bt)   
-    results = np.load(SAVE_PATH, allow_pickle=True)
-    bt.store_backtest_results(results, start_idx=start_idx, end_idx=end_idx)
-    print(f"Performance of backtest results over period {start_idx // 252 + 2007} to {end_idx // 252 + 2007}")
-    metrics = bt.performance()
-    sharpe_ratios.append(metrics[0])
-    MaxDrawdown.append(metrics[1])
-    CVaR.append(metrics[2])
-    sortino.append(metrics[3])
-        #bt.run_backtest(start_idx=start_idx, end_idx=end_idx)
+    btDSP = Backtester(btDSP)
+    resultsDSP = np.load(SAVE_PATH_DSP, allow_pickle=True)
+    btDSP.store_backtest_results(resultsDSP, start_idx=start_idx, end_idx=end_idx)
+    print(f"Performance of DSP backtest results over period {start_idx // 252 + 2007} to {end_idx // 252 + 2007}")
+    metrics = btDSP.performance()
+    sharpe_ratios_DSP.append(metrics[0])
+    MaxDrawdown_DSP.append(metrics[1])
+    CVaR_DSP.append(metrics[2])
+    sortino_DSP.append(metrics[3])
 
-years = [k // 252 + 2007 + n_days // 252 for k in k0]
+    btMCVAR = Backtester(btMCVAR)
+    resultsMCVAR = np.load(SAVE_PATH_MCVAR, allow_pickle=True)
+    btMCVAR.store_backtest_results(resultsMCVAR, start_idx=start_idx, end_idx=end_idx)
+    print(f"Performance of Mean-CVaR backtest results over period {start_idx // 252 + 2007} to {end_idx // 252 + 2007}")
+    metrics = btMCVAR.performance()
+    sharpe_ratios_MCVAR.append(metrics[0])
+    MaxDrawdown_MCVAR.append(metrics[1])
+    CVaR_MCVAR.append(metrics[2])
+    sortino_MCVAR.append(metrics[3])
+    
+    # Convert lists to numpy arrays for easier manipulation
+    # Each metrics tuple contains: (strategy_sharpe, spy_sharpe), (strategy_mdd, spy_mdd), etc.
+    dsp_sharpe, spy_sharpe = sharpe_ratios_DSP[-1]  # Extract DSP and SPY Sharpe ratios (current iteration)
+    mcvar_sharpe, _ = sharpe_ratios_MCVAR[-1]       # Extract Mean-CVaR Sharpe ratio (current iteration)
+    
+    sharpe_ratios.append([dsp_sharpe, spy_sharpe, mcvar_sharpe])
+    
+    dsp_sortino, spy_sortino = sortino_DSP[-1]
+    mcvar_sortino, _ = sortino_MCVAR[-1]
+    sortino.append([dsp_sortino, spy_sortino, mcvar_sortino])
+    
+    dsp_cvar, spy_cvar = CVaR_DSP[-1]
+    mcvar_cvar, _ = CVaR_MCVAR[-1]
+    CVaR.append([dsp_cvar, spy_cvar, mcvar_cvar])
+    
+    dsp_mdd, spy_mdd = MaxDrawdown_DSP[-1]
+    mcvar_mdd, _ = MaxDrawdown_MCVAR[-1]
+    MaxDrawdown.append([dsp_mdd, spy_mdd, mcvar_mdd])
+
+# Convert to numpy arrays for plotting
+sharpe_ratios = np.array(sharpe_ratios)
+sortino = np.array(sortino)
+CVaR = np.array(CVaR)
+MaxDrawdown = np.array(MaxDrawdown)
+
+years = [k // 252 + 2007 + n_days // 252 for k in k0[:len(sharpe_ratios)]]
 plt.figure(figsize=(10,5))
-plt.plot(years, sharpe_ratios, label="Sharpe")
+plt.plot(years, sharpe_ratios[:, 0], label="DSP")
+plt.plot(years, sharpe_ratios[:, 1], label="SPY")
+plt.plot(years, sharpe_ratios[:, 2], label="Mean-CVaR")
 plt.grid(True)
 plt.title(f"Rolling {n_days//252}-Year Sharpe Ratio Over Time")
 plt.xlabel(f"End of {n_days//252}-Year Period")
 plt.ylabel("Sharpe Ratio")
-plt.legend(['DSP Portfolio','SPY'])
+plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "rolling_sharpe_ratio_comparison.png"))
 plt.show()
 plt.close()
 
 plt.figure(figsize=(10,5))
-plt.plot(years, sortino, label="Sortino")
+plt.plot(years, sortino[:, 0], label="DSP")
+plt.plot(years, sortino[:, 1], label="SPY")
+plt.plot(years, sortino[:, 2], label="Mean-CVaR")
 plt.grid(True)
 plt.title(f"Rolling {n_days//252}-Year Sortino Ratio Over Time")
 plt.xlabel(f"End of {n_days//252}-Year Period")
 plt.ylabel("Sortino Ratio")
-plt.legend(['DSP Portfolio','SPY'])
+plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "rolling_sortino_ratio_comparison.png"))
 plt.show()
 plt.close()
 
 plt.figure(figsize=(10,5))
-plt.plot(years, CVaR, label="CVaR")
+plt.plot(years, CVaR[:, 0], label="DSP")
+plt.plot(years, CVaR[:, 1], label="SPY")
+plt.plot(years, CVaR[:, 2], label="Mean-CVaR")
 plt.grid(True)
 plt.title(f"Rolling {n_days//252}-Year CVaR Over Time")
 plt.xlabel(f"End of {n_days//252}-Year Period")
 plt.ylabel("CVaR")
-plt.legend(['DSP Portfolio','SPY'])
+plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "rolling_cvar_comparison.png"))
 plt.show()
 plt.close()
 
 plt.figure(figsize=(10,5))
-plt.plot(years, [(-mdd[0],-mdd[1]) for mdd in MaxDrawdown], label="Max Drawdown")
+plt.plot(years, -MaxDrawdown[:, 0], label="DSP")  # Convert to positive for plotting
+plt.plot(years, -MaxDrawdown[:, 1], label="SPY")
+plt.plot(years, -MaxDrawdown[:, 2], label="Mean-CVaR")
 plt.grid(True)
 plt.title(f"Rolling {n_days//252}-Year Max Drawdown Over Time")
 plt.xlabel(f"End of {n_days//252}-Year Period")
 plt.ylabel("Max Drawdown")
-plt.legend(['DSP Portfolio','SPY'])
+plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "rolling_max_drawdown_comparison.png"))
 plt.show()

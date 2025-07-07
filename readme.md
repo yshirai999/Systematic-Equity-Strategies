@@ -93,23 +93,15 @@ In particular:
 
 These findings suggest that DSP’s primary edge lies in deliberately constraining risk — offering an effective hedge-like structure for systematic strategies operating under uncertainty — while closely trailing, and occasionally outperforming, SPY in terms of Sharpe ratio.
 
-![Rolling Sortino Ratio Comparison](Backtesting/Results/DSP/rolling_sortino_ratio_comparison.png)
+These results also show a slight, but substantial improvement with respect to Mean-CVaR optimization at 95%
 
-![Rolling CVaR Comparison](Backtesting/Results/DSP/rolling_cvar_comparison.png)
+![Rolling CVaR Comparison](Backtesting/Results/rolling_cvar_comparison.png)
 
-![Rolling Max Drawdown Comparison](Backtesting/Results/DSP/rolling_max_drawdown_comparison.png)
+![Rolling Max Drawdown Comparison](Backtesting/Results/rolling_max_drawdown_comparison.png)
 
-![Rolling Sharpe Ratio Comparison](Backtesting/Results/DSP/rolling_sharpe_ratio_comparison.png)
+![Rolling Sharpe Ratio Comparison](Backtesting/Results/rolling_sharpe_ratio_comparison.png)
 
-These results show a slight, but substantial improvement with respect to Mean-CVaR optimization at 95%
-
-![Rolling Sortino Ratio Comparison](Backtesting/Results/MCVAR/rolling_sortino_ratio_comparison.png)
-
-![Rolling CVaR Comparison](Backtesting/Results/MCVAR/rolling_cvar_comparison.png)
-
-![Rolling Max Drawdown Comparison](Backtesting/Results/MCVAR/rolling_max_drawdown_comparison.png)
-
-![Rolling Sharpe Ratio Comparison](Backtesting/Results/MCVAR/rolling_sharpe_ratio_comparison.png)
+![Rolling Sortino Ratio Comparison](Backtesting/Results/rolling_sortino_ratio_comparison.png)
 
 
 ## Running the Code
