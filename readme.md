@@ -97,7 +97,7 @@ These findings suggest that DSP’s primary edge lies in deliberately constraini
 
 ![Rolling CVaR Comparison](Backtesting/Results/DSP/rolling_cvar_comparison.png)
 
-![Rolling Max Drawdown Comparison](Backtesting/DSP/Results/rolling_max_drawdown_comparison.png)
+![Rolling Max Drawdown Comparison](Backtesting/Results/DSP/rolling_max_drawdown_comparison.png)
 
 ![Rolling Sharpe Ratio Comparison](Backtesting/Results/DSP/rolling_sharpe_ratio_comparison.png)
 
