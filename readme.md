@@ -103,7 +103,6 @@ These results also show a slight, but substantial improvement with respect to Me
 
 ![Rolling Sortino Ratio Comparison](Backtesting/Results/rolling_sortino_ratio_comparison.png)
 
-
 ## Running the Code
 
 ### Set up environment
