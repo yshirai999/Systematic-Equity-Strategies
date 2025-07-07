@@ -103,13 +103,13 @@ These findings suggest that DSP’s primary edge lies in deliberately constraini
 
 These results show a slight, but substantial improvement with respect to Mean-CVaR optimization at 95%
 
-![Rolling Sortino Ratio Comparison](Backtesting/Results/MeanCVaR/rolling_sortino_ratio_comparison.png)
+![Rolling Sortino Ratio Comparison](Backtesting/Results/MCVAR/rolling_sortino_ratio_comparison.png)
 
-![Rolling CVaR Comparison](Backtesting/Results/MeanCVaR/rolling_cvar_comparison.png)
+![Rolling CVaR Comparison](Backtesting/Results/MCVAR/rolling_cvar_comparison.png)
 
-![Rolling Max Drawdown Comparison](Backtesting/MeanCVaR/Results/rolling_max_drawdown_comparison.png)
+![Rolling Max Drawdown Comparison](Backtesting/MCVAR/Results/rolling_max_drawdown_comparison.png)
 
-![Rolling Sharpe Ratio Comparison](Backtesting/Results/MeanCVaR/rolling_sharpe_ratio_comparison.png)
+![Rolling Sharpe Ratio Comparison](Backtesting/Results/MCVAR/rolling_sharpe_ratio_comparison.png)
 
 
 ## Running the Code
