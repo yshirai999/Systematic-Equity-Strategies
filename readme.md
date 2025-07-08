@@ -51,11 +51,13 @@ Systematic-Equity-Strategies/
 │       └── results/               # Fitted correlation matrices and plots
 │
 ├── Optimizers/                     # Portfolio optimization methods
-│   └── DSP/                       # Dynamic Saddle Programming
-│       ├── dsp_solver.py          # General DSP problem class
-│       ├── constraints_utils.py   # Builds Phi(a) and a-grid
-│       ├── simulate_joint.py      # Joint return simulation from BG + t-Copula
-│       └── Tests.ipynb            # Testing and validation notebook
+│   ├── DSP/                       # Dynamic Saddle Programming
+│   │   ├── dsp_solver.py          # General DSP problem class
+│   │   ├── constraints_utils.py   # Builds Phi(a) and a-grid
+│   │   ├── simulate_joint.py      # Joint return simulation from BG + t-Copula
+│   │   └── Tests.ipynb            # Testing and validation notebook
+│   └── MeanCVaR/                  # Mean-CVaR optimization
+│       └── mean_CVaR_solver.py    # Mean-CVaR optimizer implementation
 │
 ├── Backtesting/                    # Strategy backtesting framework
 │   ├── Backtesting.py             # Main backtesting class
