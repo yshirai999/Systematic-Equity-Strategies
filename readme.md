@@ -2,9 +2,7 @@
 
 This repo implements a t-copula with Bilateral Gamma (BG) marginals for joint ETFs return distribution, with a focus on robust, systematic signal extraction.
 
-A non-technical summary of this repo is also available at:
-
-<https://medium.com/@yoshihiroshirai/a-robust-systematic-equity-strategies-d26ea229bde0>
+A non-technical summary of this repo is also available [here](https://medium.com/@yoshihiroshirai/a-robust-systematic-equity-strategies-d26ea229bde0)
 
 ## About the Author
 
