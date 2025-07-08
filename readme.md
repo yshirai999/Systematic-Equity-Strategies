@@ -4,7 +4,7 @@ This repo implements a t-copula with Bilateral Gamma (BG) marginals for joint ET
 
 A non-technical summary of this repo is also available at:
 
-<https://medium.com/@yoshihiroshirai/a-robust-systematic-equity-strategies-d26ea229bde0>
+[medium]<https://medium.com/@yoshihiroshirai/a-robust-systematic-equity-strategies-d26ea229bde0>
 
 ## About the Author
 
