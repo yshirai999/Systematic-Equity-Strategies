@@ -56,7 +56,7 @@ def run_parallel_backtest(tickers, lam, J, df, rebalance_every, decay, start_idx
     else:
         bt = MeanCVaRBacktester(tickers=tickers, J=J, df=df,
                                       lam=lam, rebalance_every=rebalance_every, decay=decay)
-    bt_final = Backtester(Backtester=bt)
+    bt_final = Backtester(Optimizer=bt)
     bt_final.store_backtest_results(results, start_idx=start_idx, end_idx=end_idx, save_path=save_path)
     #bt_final.performance()
     print(bt_final.get_pnl_df())
@@ -68,11 +68,11 @@ if __name__ == "__main__":
     lam = 0.5
     J = 10000
     df = 6
-    rebalance_every = 10
+    rebalance_every = 20
     decay = 0.95
 
     bt = run_parallel_backtest(
         tickers=tickers, lam=lam, J=J, df=df,
         rebalance_every=rebalance_every, decay=decay,
-        start_idx=0, end_idx=4330, Optimizer="MeanCVaR"
+        start_idx=0, end_idx=4330, Optimizer="DSP"
     )

@@ -7,8 +7,8 @@ from Optimizers.DSP.dsp_solver import DSPOptimizer
 from Optimizers.MeanCVaR.mean_CVaR_solver import MeanCVaROptimizer
 
 class Backtester:
-    def __init__(self, Backtester):
-        self.optimizer = Backtester  # Instance of DSPBacktester, MeanCVaRBacktester, etc.
+    def __init__(self, Optimizer):
+        self.optimizer = Optimizer  # Instance of DSPBacktester, MeanCVaRBacktester, etc.
         self.rebalance_every = self.optimizer.rebalance_every
         self.decay = self.optimizer.decay
 
@@ -20,9 +20,9 @@ class Backtester:
         self.total_wealth_spy = [] 
         self.pnl_history_spy = []
 
-        self.valid_returns = Backtester.valid_returns
-        self.valid_dates = Backtester.valid_dates
-        self.tickers = Backtester.tickers
+        self.valid_returns = Optimizer.valid_returns
+        self.valid_dates = Optimizer.valid_dates
+        self.tickers = Optimizer.tickers
 
     def compute_weights_on_date(self, date_idx):
         date_str = str(self.valid_dates[date_idx])[:10]
@@ -46,24 +46,21 @@ class Backtester:
             w_new = w_opt[0]
 
             # Update total positions
-            # Method 1: Decay and accumulate weights (original in the paper)
-            #cost = (w_new - (1 - self.decay ) * w_total ) @ self.valid_returns[t]
-            # w_total = self.decay * w_total + w_new
 
-            if isinstance(self.optimizer, DSPOptimizer):
-                # Method 2: Normalize weights and accumulate with weight-dependent decay
-                w_new = w_new / np.sum(np.abs(w_new))
+            if isinstance(self.optimizer, DSPOptimizer) or isinstance(self.optimizer, MeanCVaROptimizer):
+                # Method 2: Simple decay - assume optimizer enforces sum(w) = 1
+                # No normalization needed if optimization has budget constraint
                 if i == 0:
-                    #print(w_new)
                     w_total = w_new
                 else:
-                    m = min(self.decay, 1 - self.decay)
-                    M = max(self.decay, 1 - self.decay)
-                    decay = np.clip(sum(w_total != 0)/sum(w_new != 0),m,M)  # Adjust decay based on previous weights
+                    # m = min(self.decay, 1 - self.decay)
+                    # M = max(self.decay, 1 - self.decay)
+                    # decay = np.clip(sum(w_total != 0)/sum(w_new != 0),m,M)
+                    decay = self.decay
                     w_total = decay * w_total + ( 1 - decay ) * w_new
             else:
                 # Method 3: Simple decay and normalize for other optimizers
-                w_total = w_new / np.sum(np.abs(w_new))
+                w_total = w_new
 
             # Compute return from observed market returns
             R_forward = self.valid_returns[t+1:t+1+self.rebalance_every]
@@ -187,7 +184,7 @@ class Backtester:
     
     def compute_risk_metrics(self, pnl_array, label=""):
 
-        print(f"Min {label} PnL:", pnl_array.min())
+        #print(f"Min {label} PnL:", pnl_array.min())
         rebalance_every = self.rebalance_every
         annual_factor = 252 / rebalance_every
 

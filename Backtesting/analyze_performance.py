@@ -3,7 +3,7 @@ sys.path.append(os.path.abspath('.'))
 SAVE_DIR = os.path.join(os.path.dirname(__file__), 'Results')
 SAVE_DIR_DSP = os.path.join(SAVE_DIR, 'DSP')
 SAVE_DIR_MCVAR = os.path.join(SAVE_DIR, 'MCVAR')
-SAVE_PATH_DSP = os.path.join(SAVE_DIR, "backtest_results_DSP_0_4330_50.npy")
+SAVE_PATH_DSP = os.path.join(SAVE_DIR, "backtest_results.npy")
 SAVE_PATH_MCVAR = os.path.join(SAVE_DIR, "backtest_results_MCVAR_0_4330_95.npy")
 os.makedirs(SAVE_DIR, exist_ok=True)
 os.makedirs(SAVE_DIR_DSP, exist_ok=True)
@@ -19,8 +19,8 @@ tickers = ['spy', 'xlb', 'xle', 'xlf', 'xli', 'xlk', 'xlu', 'xlv', 'xly']
 J = 10000
 df = 6
 rebalance_every = 20  # daily for test
-decay = 0.5
-n_days = 3*252  # 5 years of trading days (252 days/year * 5 years)
+decay = 0.95
+n_days = int(1*252)  # n years of trading days (252 days/year * n years)
 k0 = range(0, 4330-n_days, 252)
 k1 = range(252, 4330, 252)
 sharpe_ratios_DSP = []
@@ -50,7 +50,7 @@ for k in k0:
     btDSP = Backtester(btDSP)
     resultsDSP = np.load(SAVE_PATH_DSP, allow_pickle=True)
     btDSP.store_backtest_results(resultsDSP, start_idx=start_idx, end_idx=end_idx)
-    print(f"Performance of DSP backtest results over period {start_idx // 252 + 2007} to {end_idx // 252 + 2007}")
+    #print(f"Performance of DSP backtest results over period {start_idx // 252 + 2007} to {end_idx // 252 + 2007}")
     metrics = btDSP.performance()
     sharpe_ratios_DSP.append(metrics[0])
     MaxDrawdown_DSP.append(metrics[1])
@@ -60,7 +60,7 @@ for k in k0:
     btMCVAR = Backtester(btMCVAR)
     resultsMCVAR = np.load(SAVE_PATH_MCVAR, allow_pickle=True)
     btMCVAR.store_backtest_results(resultsMCVAR, start_idx=start_idx, end_idx=end_idx)
-    print(f"Performance of Mean-CVaR backtest results over period {start_idx // 252 + 2007} to {end_idx // 252 + 2007}")
+    #print(f"Performance of Mean-CVaR backtest results over period {start_idx // 252 + 2007} to {end_idx // 252 + 2007}")
     metrics = btMCVAR.performance()
     sharpe_ratios_MCVAR.append(metrics[0])
     MaxDrawdown_MCVAR.append(metrics[1])
@@ -148,3 +148,67 @@ plt.tight_layout()
 plt.savefig(os.path.join(SAVE_DIR, "rolling_max_drawdown_comparison.png"))
 plt.show()
 plt.close()
+
+
+# Plot weight evolution for the full period (outside the rolling window loop)
+print("Generating weight evolution plots for DSP portfolio...")
+
+# Load full period results for weight analysis
+btDSP_full = DSPBacktester(tickers=tickers, J=J, df=df,
+                          rebalance_every=rebalance_every, decay=decay)
+btDSP_full = Backtester(btDSP_full)
+resultsDSP_full = np.load(SAVE_PATH_DSP, allow_pickle=True)
+btDSP_full.store_backtest_results(resultsDSP_full, start_idx=0, end_idx=4330)
+
+# Get weights dataframe
+weights_df = btDSP_full.get_weights_df()
+dates = btDSP_full.rebalance_dates
+
+# Simple line chart showing all weights over time
+plt.figure(figsize=(14, 8))
+for col in weights_df.columns:
+    plt.plot(dates, weights_df[col], label=col.upper(), linewidth=2)
+
+plt.axhline(y=0, color='black', linestyle='--', alpha=0.5)
+plt.title('DSP Portfolio Weights Evolution Over Time')
+plt.xlabel('Date')
+plt.ylabel('Portfolio Weight')
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig(os.path.join(SAVE_DIR, "DSP_weight_evolution.png"), dpi=300, bbox_inches='tight')
+plt.show()
+plt.close()
+
+
+# Plot weight evolution for the full period (outside the rolling window loop)
+print("Generating weight evolution plots for Mean-CVaR portfolio...")
+
+# Load full period results for weight analysis
+btMeanCVaR_full = MeanCVaRBacktester(tickers=tickers, J=J, df=df,
+                                      rebalance_every=rebalance_every, decay=decay)
+btMeanCVaR_full = Backtester(btMeanCVaR_full)
+resultsMeanCVaR_full = np.load(SAVE_PATH_MCVAR, allow_pickle=True)
+btMeanCVaR_full.store_backtest_results(resultsMeanCVaR_full, start_idx=0, end_idx=4330)
+
+# Get weights dataframe
+weights_df = btMeanCVaR_full.get_weights_df()
+dates = btMeanCVaR_full.rebalance_dates
+
+# Simple line chart showing all weights over time
+plt.figure(figsize=(14, 8))
+for col in weights_df.columns:
+    plt.plot(dates, weights_df[col], label=col.upper(), linewidth=2)
+
+plt.axhline(y=0, color='black', linestyle='--', alpha=0.5)
+plt.title('Mean-CVaR Portfolio Weights Evolution Over Time')
+plt.xlabel('Date')
+plt.ylabel('Portfolio Weight')
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig(os.path.join(SAVE_DIR, "MCVAR_weight_evolution.png"), dpi=300, bbox_inches='tight')
+plt.show()
+plt.close()
+
+
