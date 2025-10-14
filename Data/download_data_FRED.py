@@ -5,7 +5,7 @@ from datetime import datetime
 from scipy.io import savemat
 from dotenv import load_dotenv
 
-def download_fred_data(start='2010-01-01', save_path='data'):
+def download_fred_data(start='2007-01-01', save_path='data'):
     # Load API key
     load_dotenv()
     fred_key = os.getenv("FRED_API_KEY")
