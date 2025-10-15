@@ -2,7 +2,9 @@
 
 This repo implements a t-copula with Bilateral Gamma (BG) marginals for joint ETFs return distribution, with a focus on robust, systematic signal extraction.
 
-A non-technical summary of this repo is also available on [medium](https://medium.com/@yoshihiroshirai/a-robust-systematic-equity-strategies-d26ea229bde0)
+The strategy implemented here is a self-financing variant of the one appeared in the paper [Multiasset Investment](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5195015) by D. Madan, Y. Shirai and K. Wang, and our aim is to compare it with few benchmark strategies in terms of standard performance measures, such as Sharpe ratio and Max Drawdown.
+
+A non-technical summary of this repo is also available on [medium](https://medium.com/@yoshihiroshirai/a-robust-systematic-equity-strategies-d26ea229bde0).
 
 ## About the Author
 
@@ -79,19 +81,9 @@ A systematic strategy is then implemented by rebalancing the portfolio weights e
 
 ## Results
 
-The DSP strategy shows a consistent advantage in risk-adjusted metrics that emphasize downside protection and tail risk control.
+The DSP strategy shows some advantage in risk-adjusted metrics during the GFC that emphasize downside protection and tail risk control.
 
-In particular:
-
-- **Rolling Sortino Ratios** indicate that the DSP portfolio systematically outperforms SPY in terms of downside risk-adjusted return, especially during volatile or crisis periods.
-
-- **Rolling 3-Year CVaR (5%)** plots show that DSP consistently achieves smaller average tail losses, confirming its design as a worst-case-aware optimizer.
-
-- **Rolling Max Drawdown** reveals that DSP reduces portfolio losses in drawdown-heavy regimes (e.g., 2020–2022), even when total return is modest.
-
-- **Rolling 3-Year Sharpe Ratios** show that SPY tends to dominate during bull markets (e.g., 2013–2016), but DSP often remains competitive and resilient.
-
-These findings suggest that DSP’s primary edge lies in deliberately constraining risk — offering an effective hedge-like structure for systematic strategies operating under uncertainty — while closely trailing, and occasionally outperforming, SPY in terms of Sharpe ratio.
+In particular: **Rollingm CVaR** and **Max Drawdown** indicate that the DSP portfolio outperforms SPY in terms of downside risk-adjusted return during during the GFC and the sovereign debt crisis (2008-2012), although no similar findings are found during subsequent periods. Performance measures seem to confirm this result.
 
 These results also show a slight, but substantial improvement with respect to Mean-CVaR optimization at 95%
 
@@ -116,4 +108,4 @@ conda activate mbg-env
 
 Planned extensions include:
 
-Improve upon the joint return distribution using Generative AI and including macro factors to capture evolving regime switched and volatility clustering phenomena
+Improve upon the joint return distribution using Generative AI and including macro factors to capture evolving regime switched and volatility clustering phenomena.
