@@ -3,8 +3,8 @@ sys.path.append(os.path.abspath('.'))
 SAVE_DIR = os.path.join(os.path.dirname(__file__), 'Results')
 SAVE_DIR_DSP = os.path.join(SAVE_DIR, 'DSP')
 SAVE_DIR_MCVAR = os.path.join(SAVE_DIR, 'MCVAR')
-SAVE_PATH_DSP = os.path.join(SAVE_DIR, "backtest_results.npy")
-SAVE_PATH_MCVAR = os.path.join(SAVE_DIR, "backtest_results_MCVAR_0_4330_95.npy")
+SAVE_PATH_DSP = os.path.join(SAVE_DIR, "backtest_results_DSP_0_4330_75_Rebal20_5Short_160Gross.npy")
+SAVE_PATH_MCVAR = os.path.join(SAVE_DIR, "backtest_results_MCVAR_0_4330_95_Rebal20_5Short_160Gross.npy")
 os.makedirs(SAVE_DIR, exist_ok=True)
 os.makedirs(SAVE_DIR_DSP, exist_ok=True)
 os.makedirs(SAVE_DIR_MCVAR, exist_ok=True)
@@ -14,11 +14,10 @@ from Backtesting import DSPBacktester, MeanCVaRBacktester, Backtester
 import matplotlib.pyplot as plt
 
 # Set parameters
-Backtester_class = "MCVAR"  # or "DSP"
 tickers = ['spy', 'xlb', 'xle', 'xlf', 'xli', 'xlk', 'xlu', 'xlv', 'xly']
 J = 10000
 df = 6
-rebalance_every = 20  # daily for test
+rebalance_every = 20  # day for test
 decay = 0.95
 n_days = int(1*252)  # n years of trading days (252 days/year * n years)
 k0 = range(0, 4330-n_days, 252)

@@ -33,7 +33,8 @@ class MeanCVaROptimizer(JointReturnSimulator):
         portfolio_loss = -R @ w
         constraints = [
             cp.sum(w) == 1,
-            w >= 0,
+            w >= -0.05,  # Max 5% short per position (institutional limit)
+            cp.sum(cp.abs(w)) <= 1.6,  # 160% gross exposure (130/30 strategy)
             z >= portfolio_loss - eta,
             z >= 0,
         ]

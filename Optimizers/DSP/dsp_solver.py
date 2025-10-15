@@ -48,9 +48,9 @@ class DSPOptimizer(JointReturnSimulator):
         constraints = [
             cp.sum(self.z) / self.J == 1,
             self.z >= 0, 
-            cp.sum(self.p) == 1, 
-            self.p >= 0                   # Budget constraint
-            # cp.sum(cp.abs(self.p)) <= 2.0         # Max 200% gross exposure
+            cp.sum(self.p) == 1,                    # Budget constraint (net 100% invested)
+            self.p >= -0.05,                        # Max 5% short per position (institutional limit)
+            cp.sum(cp.abs(self.p)) <= 1.6           # 160% gross exposure (130/30 strategy)
         ]
         for ak, phik in zip(self.a, self.Phi):
             constraints.append(cp.sum(cp.pos(self.z - ak)) / self.J <= phik)

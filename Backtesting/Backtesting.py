@@ -259,34 +259,6 @@ class DSPBacktester(DSPOptimizer):
         self.total_wealth_spy = [] 
         self.pnl_history_spy = []
 
-    def run_backtest(self, start_idx=100, end_idx=None):
-        if end_idx is None:
-            end_idx = len(self.valid_dates) - self.rebalance_every  # leave space for forward return window
-
-        w_total = np.zeros(len(self.tickers))
-
-        for t in range(start_idx, end_idx, self.rebalance_every):
-            date_str = str(self.valid_dates[t])[:10]
-
-            # Compute optimal weights from simulated R
-            w_opt = self.solve(date_str=date_str)
-            w_new = w_opt[0]
-
-            # Update total positions
-            w_total = self.decay * w_total + w_new
-
-            # Compute return from observed market returns
-            R_forward = self.valid_returns[t+1:t+1+self.rebalance_every]
-            if len(R_forward) < self.rebalance_every:
-                break
-            pnl = R_forward @ w_total
-            cum_pnl = np.sum(pnl)
-
-            self.results[date_str] = w_opt
-            self.w_total_history.append(w_total.copy())
-            self.pnl_history.append(cum_pnl)
-            self.rebalance_dates.append(self.valid_dates[t])
-
     def compute_weights_on_date(self, date_idx):
         """
         Compute optimal weights for a given date index.
@@ -300,6 +272,34 @@ class DSPBacktester(DSPOptimizer):
         w_opt = self.solve(date_str=date_str)
 
         return (date_str, w_opt)
+    
+    # def run_backtest(self, start_idx=100, end_idx=None):
+    #     if end_idx is None:
+    #         end_idx = len(self.valid_dates) - self.rebalance_every  # leave space for forward return window
+
+    #     w_total = np.zeros(len(self.tickers))
+
+    #     for t in range(start_idx, end_idx, self.rebalance_every):
+    #         date_str = str(self.valid_dates[t])[:10]
+
+    #         # Compute optimal weights from simulated R
+    #         w_opt = self.solve(date_str=date_str)
+    #         w_new = w_opt[0]
+
+    #     # Update total positions
+    #     w_total = self.decay * w_total + w_new
+
+    #     # Compute return from observed market returns
+    #     R_forward = self.valid_returns[t+1:t+1+self.rebalance_every]
+    #     if len(R_forward) < self.rebalance_every:
+    #         break
+    #     pnl = R_forward @ w_total
+    #     cum_pnl = np.sum(pnl)
+
+    #     self.results[date_str] = w_opt
+    #     self.w_total_history.append(w_total.copy())
+    #     self.pnl_history.append(cum_pnl)
+    #     self.rebalance_dates.append(self.valid_dates[t])
 
     # def store_backtest_results(self, results, start_idx, end_idx, save_path=None):
     #     """ Store the results of the backtest run. """
