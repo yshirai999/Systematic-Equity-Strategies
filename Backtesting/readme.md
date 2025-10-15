@@ -33,7 +33,7 @@ Backtesting/
 
 ## Notes
 
-The backtests assume daily rebalancing and self-financing strategies (weights sum to 1 and no cash injection). The strategy's 3-year rolling Sharpe ratio is reported in the root folder README and is visualized to assess the strategy’s stability over time.
+The backtests assume daily rebalancing and self-financing strategies (weights sum to 1 and no cash injection). The strategy's 1-year rolling Sharpe ratio is reported in the root folder README and is visualized to assess the strategy’s stability over time.
 
 ## Future Enhancements
 
